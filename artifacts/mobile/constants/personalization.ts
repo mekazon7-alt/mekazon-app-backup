@@ -10,6 +10,9 @@ export interface Product {
   tag?: string;
   cardColor: string;
   imageKey?: string;
+  remoteImageUrl?: string;
+  shopifyHandle?: string;
+  variantId?: string;
 }
 
 export interface Basket {

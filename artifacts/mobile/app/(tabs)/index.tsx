@@ -19,6 +19,7 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { useColors } from "@/hooks/useColors";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { useCart } from "@/context/CartContext";
+import { ActivityIndicator } from "react-native";
 
 const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   "hero-uganda": require("@/assets/images/hero-uganda.png"),
@@ -49,15 +50,15 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { countryConfig } = useHomeCountry();
+  const { experience, shopifyProducts, productsLoading } = useHomeCountry();
   const { totalItems } = useCart();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
 
-  if (!countryConfig) return null;
+  if (!experience) return null;
 
-  const heroImage = HERO_IMAGES[countryConfig.heroImageKey];
+  const heroImage = HERO_IMAGES[experience.heroImageKey];
   const hour = new Date().getHours();
   const timeGreeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -110,7 +111,7 @@ export default function HomeScreen() {
             <View style={[styles.heroBadge, { backgroundColor: colors.secondary }]}>
               <View style={[styles.heroBadgeDot, { backgroundColor: colors.primary }]} />
               <Text style={[styles.heroBadgeText, { color: colors.primary }]}>
-                {countryConfig.nativeGreeting}
+                {experience.nativeGreeting}
               </Text>
             </View>
             <Text style={[styles.heroTitle, { color: colors.foreground }]}>
@@ -152,7 +153,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesScroll}
           >
-            {countryConfig.categories.map((cat, i) => (
+            {experience.categories.map((cat, i) => (
               <Pressable
                 key={cat.name}
                 style={[
@@ -184,7 +185,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             title="My Baskets"
-            subtitle={`Curated for ${countryConfig.name}`}
+            subtitle={`Curated for ${experience.name}`}
             onSeeAll={() => {}}
           />
           <ScrollView
@@ -192,7 +193,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {countryConfig.baskets.map((basket) => (
+            {experience.baskets.map((basket) => (
               <BasketCard key={basket.id} basket={basket} />
             ))}
           </ScrollView>
@@ -205,15 +206,21 @@ export default function HomeScreen() {
             subtitle="Popular in your community today"
             onSeeAll={() => {}}
           />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-          >
-            {countryConfig.products.slice(0, 6).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </ScrollView>
+          {productsLoading ? (
+            <View style={styles.productsLoader}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+            >
+              {shopifyProducts.slice(0, 6).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         {/* Meal Inspiration */}
@@ -244,7 +251,7 @@ export default function HomeScreen() {
         {/* More Products */}
         <View style={styles.section}>
           <SectionHeader
-            title={`Made for ${countryConfig.name}`}
+            title={`Made for ${experience.name}`}
             subtitle="Authentic, sourced just for you"
             onSeeAll={() => {}}
           />
@@ -253,7 +260,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {countryConfig.products.slice(4).map((product) => (
+            {shopifyProducts.slice(4).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </ScrollView>
@@ -474,6 +481,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: -0.2,
+  },
+  productsLoader: {
+    height: 160,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 22,
   },
   trustBar: {
     marginHorizontal: 22,

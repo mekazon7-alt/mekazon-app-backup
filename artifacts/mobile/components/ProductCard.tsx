@@ -49,6 +49,7 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const isProduct = product.imageKey?.startsWith("product-");
+  const hasRemoteImage = !productImage && !!product.remoteImageUrl;
 
   return (
     <AnimatedPressable
@@ -63,7 +64,7 @@ export function ProductCard({ product }: ProductCardProps) {
         style={[
           styles.imageArea,
           {
-            backgroundColor: productImage
+            backgroundColor: productImage || hasRemoteImage
               ? isProduct ? "#F4F6EE" : colors.muted
               : product.cardColor + "22",
           },
@@ -74,6 +75,12 @@ export function ProductCard({ product }: ProductCardProps) {
             source={productImage}
             style={isProduct ? styles.productImageContain : styles.productImageCover}
             contentFit={isProduct ? "contain" : "cover"}
+          />
+        ) : hasRemoteImage ? (
+          <Image
+            source={{ uri: product.remoteImageUrl }}
+            style={styles.productImageCover}
+            contentFit="cover"
           />
         ) : (
           <View style={[styles.colorDot, { backgroundColor: product.cardColor }]} />

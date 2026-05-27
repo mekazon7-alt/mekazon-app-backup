@@ -20,7 +20,7 @@ import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalizatio
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { homeCountry, countryConfig, setHomeCountry } = useHomeCountry();
+  const { homeCountry, experience, setHomeCountry } = useHomeCountry();
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
               <View style={styles.homeCountryInfo}>
                 <Text style={[styles.homeCountryName, { color: colors.foreground }]}>{currentOption.name}</Text>
                 <Text style={[styles.homeCountrySubtitle, { color: colors.mutedForeground }]}>
-                  {countryConfig?.tagline}
+                  {experience?.tagline}
                 </Text>
               </View>
               <Ionicons name="checkmark-circle" size={20} color={colors.primary} />

@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  FlatList,
   Platform,
   Pressable,
   ScrollView,
@@ -14,35 +13,42 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { useHomeCountry } from "@/context/HomeCountryContext";
-import { useCart } from "@/context/CartContext";
 import { ProductCard } from "@/components/ProductCard";
 
 export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { countryConfig } = useHomeCountry();
-  const { totalItems } = useCart();
+  const { experience, shopifyProducts } = useHomeCountry();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
 
-  const filtered = countryConfig?.products.filter((p) =>
-    p.name.toLowerCase().includes(query.toLowerCase()) ||
-    p.description.toLowerCase().includes(query.toLowerCase())
-  ) ?? [];
+  const filtered = shopifyProducts.filter(
+    (p) =>
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.description.toLowerCase().includes(query.toLowerCase())
+  );
 
-  const suggestions = countryConfig?.searchSuggestions ?? [];
+  const suggestions = experience?.searchSuggestions ?? [];
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.headerArea, { paddingTop: topPad + 12 }]}>
-        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: focused ? colors.primary : colors.border }]}>
+        <View
+          style={[
+            styles.searchBar,
+            {
+              backgroundColor: colors.card,
+              borderColor: focused ? colors.primary : colors.border,
+            },
+          ]}
+        >
           <Ionicons name="search" size={18} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.foreground }]}
-            placeholder={`Search in ${countryConfig?.name ?? "Mekazon"}...`}
+            placeholder={`Search in ${experience?.name ?? "Mekazon"}...`}
             placeholderTextColor={colors.mutedForeground}
             value={query}
             onChangeText={setQuery}
@@ -67,13 +73,16 @@ export default function SearchScreen() {
           <>
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-                {countryConfig ? `What ${countryConfig.name} shops for` : "Trending"}
+                {experience ? `What ${experience.name} shops for` : "Trending"}
               </Text>
               <View style={styles.suggestions}>
                 {suggestions.map((s) => (
                   <Pressable
                     key={s}
-                    style={[styles.suggestionPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                    style={[
+                      styles.suggestionPill,
+                      { backgroundColor: colors.secondary, borderColor: colors.border },
+                    ]}
                     onPress={() => setQuery(s)}
                   >
                     <Ionicons name="search" size={13} color={colors.mutedForeground} />
@@ -85,8 +94,12 @@ export default function SearchScreen() {
 
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Browse All Products</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
-                {(countryConfig?.products ?? []).map((p) => (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.productRow}
+              >
+                {shopifyProducts.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
               </ScrollView>
@@ -106,7 +119,11 @@ export default function SearchScreen() {
                 </Text>
               </View>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.productRow}
+              >
                 {filtered.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
@@ -120,9 +137,7 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
+  screen: { flex: 1 },
   headerArea: {
     paddingHorizontal: 20,
     paddingBottom: 16,

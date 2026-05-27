@@ -1,2 +1,3 @@
 - [Mekazon design system](mekazon-design.md) — olive green primary + terracotta accent + warm cream background; never use dark/black-heavy UI
 - [Mekazon image philosophy](mekazon-images.md) — two distinct image types: real product packaging (trust) vs bright daylight lifestyle (craving/emotion)
+- [Mekazon Shopify architecture](mekazon-shopify-arch.md) — collection-per-country pattern; client auto-switches mock→real via env vars

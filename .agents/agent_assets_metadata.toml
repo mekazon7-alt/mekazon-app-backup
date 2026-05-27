@@ -1,0 +1,32 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "88PShbQvcY9bSaonKY1OK"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "mekazon app icon"
+
+[[generated]]
+id = "3G1gPrJ_4dKJL7KtqPvG7"
+uri = "file://artifacts/mobile/assets/images/hero-uganda.png"
+type = "image"
+title = "uganda hero food"
+
+[[generated]]
+id = "U1EjFRfXt6-4ycPzDGmac"
+uri = "file://artifacts/mobile/assets/images/hero-kenya.png"
+type = "image"
+title = "kenya hero food"
+
+[[generated]]
+id = "BuVKe8yG-NKe_XOXzGnjg"
+uri = "file://artifacts/mobile/assets/images/hero-ethiopia.png"
+type = "image"
+title = "ethiopia hero coffee injera"
+
+[[generated]]
+id = "wY3tPYKt2RlwrB6LqlqYl"
+uri = "file://artifacts/mobile/assets/images/hero-pan-african.png"
+type = "image"
+title = "pan african market spread"

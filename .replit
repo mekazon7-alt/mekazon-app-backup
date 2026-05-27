@@ -30,3 +30,9 @@ externalPort = 8081
 [[ports]]
 localPort = 18115
 externalPort = 80
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_SHOPIFY_STORE_DOMAIN = "bbpdqw-tj.myshopify.com"
+EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN = "51952f26cc086e7579646d16874617c8"

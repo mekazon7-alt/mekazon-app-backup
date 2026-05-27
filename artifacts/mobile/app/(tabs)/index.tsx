@@ -62,8 +62,9 @@ export default function HomeScreen() {
   const timeGreeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const lifestyleKeys = ["lifestyle-ugali", "lifestyle-injera", "lifestyle-matooke", "lifestyle-coffee", "lifestyle-spices"] as const;
-  const availableLifestyle = lifestyleKeys.filter((k) => LIFESTYLE_IMAGES[k]);
+  const lifestyleKeys = (["lifestyle-ugali", "lifestyle-injera", "lifestyle-matooke", "lifestyle-coffee", "lifestyle-spices"] as const).filter(
+    (k) => LIFESTYLE_IMAGES[k]
+  );
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -71,42 +72,47 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPad }}
       >
-        <View style={[styles.header, { paddingTop: topPad + 10 }]}>
-          <View>
-            <View style={[styles.locationPill, { backgroundColor: colors.secondary }]}>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: topPad + 12 }]}>
+          <View style={styles.headerLeft}>
+            <Pressable style={[styles.locationPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
               <Ionicons name="location" size={12} color={colors.primary} />
               <Text style={[styles.locationText, { color: colors.foreground }]}>Dubai, UAE</Text>
-              <Ionicons name="chevron-down" size={12} color={colors.mutedForeground} />
-            </View>
+              <Ionicons name="chevron-down" size={11} color={colors.mutedForeground} />
+            </Pressable>
             <Text style={[styles.greeting, { color: colors.foreground }]}>{timeGreeting}</Text>
           </View>
-          <View style={styles.headerActions}>
-            <Pressable style={[styles.iconBtn, { backgroundColor: colors.secondary }]}>
+          <View style={styles.headerRight}>
+            <Pressable style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
               <Ionicons name="notifications-outline" size={20} color={colors.foreground} />
             </Pressable>
-            <Pressable style={[styles.iconBtn, { backgroundColor: colors.secondary }]}>
+            <Pressable style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
               <Ionicons name="bag-outline" size={20} color={colors.foreground} />
               {totalItems > 0 && (
-                <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                  <Text style={[styles.badgeText, { color: colors.primaryForeground }]}>{totalItems}</Text>
+                <View style={[styles.badge, { backgroundColor: colors.accent }]}>
+                  <Text style={[styles.badgeText, { color: colors.accentForeground }]}>{totalItems}</Text>
                 </View>
               )}
             </Pressable>
           </View>
         </View>
 
-        <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.heroBanner}>
+        {/* Hero Banner */}
+        <Animated.View entering={FadeInDown.delay(80).duration(500)} style={styles.heroBanner}>
           <Image source={heroImage} style={styles.heroImage} contentFit="cover" />
           <LinearGradient
-            colors={["rgba(250,247,242,0)", "rgba(250,247,242,0.15)", "rgba(250,247,242,0.96)"]}
+            colors={["rgba(247,248,242,0)", "rgba(247,248,242,0.08)", "rgba(247,248,242,0.97)"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={styles.heroGradient}
+            style={StyleSheet.absoluteFill}
           />
           <View style={styles.heroContent}>
-            <Text style={[styles.heroNative, { color: colors.primary }]}>
-              {countryConfig.nativeGreeting}
-            </Text>
+            <View style={[styles.heroBadge, { backgroundColor: colors.secondary }]}>
+              <View style={[styles.heroBadgeDot, { backgroundColor: colors.primary }]} />
+              <Text style={[styles.heroBadgeText, { color: colors.primary }]}>
+                {countryConfig.nativeGreeting}
+              </Text>
+            </View>
             <Text style={[styles.heroTitle, { color: colors.foreground }]}>
               Your home basket{"\n"}is ready.
             </Text>
@@ -118,105 +124,152 @@ export default function HomeScreen() {
                 <Ionicons name="refresh" size={14} color="#FFFFFF" />
                 <Text style={styles.heroBtnPrimaryText}>Buy Again</Text>
               </Pressable>
-              <Pressable style={[styles.heroBtnSecondary, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Pressable style={[styles.heroBtnSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.heroBtnSecondaryText, { color: colors.foreground }]}>Explore</Text>
-                <Ionicons name="arrow-forward" size={14} color={colors.foreground} />
+                <Ionicons name="arrow-forward" size={13} color={colors.foreground} />
               </Pressable>
             </View>
           </View>
         </Animated.View>
 
+        {/* Search */}
         <View style={styles.searchRow}>
           <Pressable style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="search" size={16} color={colors.mutedForeground} />
+            <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
             <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>
-              Search for products, meals, brands...
+              Search products, meals, brands...
             </Text>
-            <View style={[styles.searchFilter, { backgroundColor: colors.primary }]}>
-              <Ionicons name="options" size={14} color="#FFFFFF" />
+            <View style={[styles.searchFilterBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <Ionicons name="options-outline" size={14} color={colors.primary} />
             </View>
           </Pressable>
         </View>
 
+        {/* Categories */}
         <View style={styles.categoriesSection}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
-            {countryConfig.categories.map((cat) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesScroll}
+          >
+            {countryConfig.categories.map((cat, i) => (
               <Pressable
                 key={cat.name}
-                style={[styles.categoryChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  styles.categoryChip,
+                  i === 0
+                    ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                    : { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
               >
                 <Ionicons
                   name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
-                  size={15}
-                  color={colors.primary}
+                  size={14}
+                  color={i === 0 ? "#FFFFFF" : colors.primary}
                 />
-                <Text style={[styles.categoryText, { color: colors.foreground }]}>{cat.name}</Text>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    { color: i === 0 ? "#FFFFFF" : colors.foreground },
+                  ]}
+                >
+                  {cat.name}
+                </Text>
               </Pressable>
             ))}
           </ScrollView>
         </View>
 
+        {/* My Baskets */}
         <View style={styles.section}>
           <SectionHeader
             title="My Baskets"
             subtitle={`Curated for ${countryConfig.name}`}
             onSeeAll={() => {}}
           />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScroll}
+          >
             {countryConfig.baskets.map((basket) => (
               <BasketCard key={basket.id} basket={basket} />
             ))}
           </ScrollView>
         </View>
 
+        {/* Cravings Right Now */}
         <View style={styles.section}>
-          <SectionHeader title="Cravings Right Now" subtitle="What people in Dubai are buying" onSeeAll={() => {}} />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+          <SectionHeader
+            title="Cravings Right Now"
+            subtitle="Popular in your community today"
+            onSeeAll={() => {}}
+          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScroll}
+          >
             {countryConfig.products.slice(0, 6).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </ScrollView>
         </View>
 
-        {availableLifestyle.length > 0 && (
+        {/* Meal Inspiration */}
+        {lifestyleKeys.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title="Meal Inspiration" subtitle="Recipes you'll want to cook tonight" />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-              {availableLifestyle.map((key) => (
+            <SectionHeader title="Meal Inspiration" subtitle="Dishes to cook this week" />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+            >
+              {lifestyleKeys.map((key) => (
                 <Pressable key={key} style={styles.inspirationCard}>
                   <Image source={LIFESTYLE_IMAGES[key]} style={styles.inspirationImage} contentFit="cover" />
                   <LinearGradient
-                    colors={["transparent", "rgba(28,21,16,0.75)"]}
-                    style={styles.inspirationGradient}
+                    colors={["transparent", "rgba(20,24,16,0.65)"]}
+                    style={StyleSheet.absoluteFill}
                   />
-                  <Text style={styles.inspirationLabel}>{formatLifestyleKey(key)}</Text>
+                  <View style={styles.inspirationTextWrap}>
+                    <Text style={styles.inspirationLabel}>{formatLifestyleKey(key)}</Text>
+                  </View>
                 </Pressable>
               ))}
             </ScrollView>
           </View>
         )}
 
-        <View style={[styles.section, { marginBottom: 0 }]}>
+        {/* More Products */}
+        <View style={styles.section}>
           <SectionHeader
             title={`Made for ${countryConfig.name}`}
-            subtitle="Authentic products, sourced for you"
+            subtitle="Authentic, sourced just for you"
             onSeeAll={() => {}}
           />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalScroll}
+          >
             {countryConfig.products.slice(4).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </ScrollView>
         </View>
 
+        {/* Trust Bar */}
         <View style={[styles.trustBar, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          {[
-            { icon: "shield-checkmark-outline", label: "Quality" },
-            { icon: "flash-outline", label: "Fast Delivery" },
-            { icon: "people-outline", label: "Trusted by Thousands" },
-          ].map((item) => (
+          {(
+            [
+              { icon: "shield-checkmark-outline", label: "Quality" },
+              { icon: "flash-outline", label: "Fast Delivery" },
+              { icon: "people-outline", label: "Trusted by Thousands" },
+            ] as const
+          ).map((item) => (
             <View key={item.label} style={styles.trustItem}>
-              <Ionicons name={item.icon as any} size={16} color={colors.primary} />
+              <Ionicons name={item.icon} size={18} color={colors.primary} />
               <Text style={[styles.trustText, { color: colors.mutedForeground }]}>{item.label}</Text>
             </View>
           ))}
@@ -240,44 +293,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingHorizontal: 22,
+    paddingBottom: 16,
   },
+  headerLeft: { gap: 6 },
   locationPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: 20,
+    borderWidth: 1,
     alignSelf: "flex-start",
-    marginBottom: 6,
   },
-  locationText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  greeting: {
-    fontSize: 22,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  headerActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
+  locationText: { fontSize: 12, fontWeight: "600" },
+  greeting: { fontSize: 24, fontWeight: "800", letterSpacing: -0.6 },
+  headerRight: { flexDirection: "row", gap: 10, marginTop: 4 },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
   },
   badge: {
     position: "absolute",
-    top: 6,
-    right: 6,
+    top: 7,
+    right: 7,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
@@ -287,106 +331,112 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 10, fontWeight: "700" },
   heroBanner: {
-    marginHorizontal: 20,
-    height: 280,
-    borderRadius: 22,
+    marginHorizontal: 22,
+    height: 286,
+    borderRadius: 24,
     overflow: "hidden",
-    marginBottom: 20,
-    shadowColor: "#1C1510",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 4,
+    marginBottom: 22,
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
   },
   heroImage: { ...StyleSheet.absoluteFillObject },
-  heroGradient: { ...StyleSheet.absoluteFillObject },
   heroContent: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 20,
+    padding: 22,
   },
-  heroNative: {
+  heroBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+    marginBottom: 10,
+  },
+  heroBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  heroBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginBottom: 6,
+    letterSpacing: 0.3,
   },
   heroTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "800",
-    letterSpacing: -0.6,
-    lineHeight: 30,
-    marginBottom: 4,
+    letterSpacing: -0.7,
+    lineHeight: 32,
+    marginBottom: 5,
   },
   heroTagline: {
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: 18,
+    fontWeight: "500",
   },
-  heroButtons: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  heroButtons: { flexDirection: "row", gap: 10 },
   heroBtnPrimary: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 18,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderRadius: 24,
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  heroBtnPrimaryText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
+  heroBtnPrimaryText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
   heroBtnSecondary: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 18,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderRadius: 24,
     borderWidth: 1,
   },
-  heroBtnSecondaryText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
+  heroBtnSecondaryText: { fontSize: 13, fontWeight: "700" },
   searchRow: {
-    paddingHorizontal: 20,
-    marginBottom: 18,
+    paddingHorizontal: 22,
+    marginBottom: 20,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    borderRadius: 14,
-    paddingLeft: 14,
-    paddingRight: 6,
-    paddingVertical: 10,
+    borderRadius: 16,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 12,
     borderWidth: 1,
-    shadowColor: "#1C1510",
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 4,
     elevation: 1,
   },
-  searchPlaceholder: {
-    flex: 1,
-    fontSize: 14,
-  },
-  searchFilter: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+  searchPlaceholder: { flex: 1, fontSize: 14 },
+  searchFilterBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
   },
-  categoriesSection: { marginBottom: 22 },
-  categoriesScroll: { paddingHorizontal: 20, gap: 8 },
+  categoriesSection: { marginBottom: 26 },
+  categoriesScroll: { paddingHorizontal: 22, gap: 8 },
   categoryChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -395,51 +445,45 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 24,
     borderWidth: 1,
-    shadowColor: "#1C1510",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
   },
-  categoryText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  section: { marginBottom: 28 },
-  horizontalScroll: { paddingHorizontal: 20, paddingBottom: 4 },
+  categoryText: { fontSize: 13, fontWeight: "600" },
+  section: { marginBottom: 32 },
+  horizontalScroll: { paddingHorizontal: 22, paddingBottom: 4 },
   inspirationCard: {
-    width: 160,
-    height: 140,
-    borderRadius: 16,
+    width: 164,
+    height: 148,
+    borderRadius: 18,
     overflow: "hidden",
     marginRight: 12,
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   inspirationImage: { ...StyleSheet.absoluteFillObject },
-  inspirationGradient: { ...StyleSheet.absoluteFillObject },
-  inspirationLabel: {
+  inspirationTextWrap: {
     position: "absolute",
-    bottom: 10,
-    left: 12,
-    right: 12,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+  },
+  inspirationLabel: {
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "700",
+    letterSpacing: -0.2,
   },
   trustBar: {
-    marginHorizontal: 20,
-    marginBottom: 12,
+    marginHorizontal: 22,
+    marginBottom: 16,
     flexDirection: "row",
     justifyContent: "space-around",
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
   },
-  trustItem: {
-    alignItems: "center",
-    gap: 4,
-  },
-  trustText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
+  trustItem: { alignItems: "center", gap: 6 },
+  trustText: { fontSize: 11, fontWeight: "600" },
 });

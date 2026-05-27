@@ -12,12 +12,17 @@ export function SectionHeader({ title, subtitle, onSeeAll }: SectionHeaderProps)
   const colors = useColors();
   return (
     <View style={styles.row}>
-      <View>
+      <View style={styles.textCol}>
         <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
-        {subtitle ? <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{subtitle}</Text> : null}
+        {subtitle ? (
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{subtitle}</Text>
+        ) : null}
       </View>
       {onSeeAll ? (
-        <Pressable onPress={onSeeAll}>
+        <Pressable
+          style={[styles.seeAllBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+          onPress={onSeeAll}
+        >
           <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
         </Pressable>
       ) : null}
@@ -28,22 +33,32 @@ export function SectionHeader({ title, subtitle, onSeeAll }: SectionHeaderProps)
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginBottom: 14,
+    paddingHorizontal: 22,
+    marginBottom: 16,
+  },
+  textCol: {
+    flex: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: -0.4,
+    fontSize: 19,
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 3,
+    fontWeight: "500",
+  },
+  seeAllBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
   },
   seeAll: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

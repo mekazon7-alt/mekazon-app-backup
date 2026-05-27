@@ -10,7 +10,6 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
-import { useColors } from "@/hooks/useColors";
 import type { Basket } from "@/constants/personalization";
 
 const LIFESTYLE_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -30,18 +29,13 @@ interface BasketCardProps {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function BasketCard({ basket }: BasketCardProps) {
-  const colors = useColors();
   const scale = useSharedValue(1);
-  const lifestyleImage = basket.lifestyleImageKey
-    ? LIFESTYLE_IMAGES[basket.lifestyleImageKey]
-    : null;
+  const lifestyleImage = basket.lifestyleImageKey ? LIFESTYLE_IMAGES[basket.lifestyleImageKey] : null;
 
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   const handlePress = () => {
-    scale.value = withSpring(0.96, {}, () => {
-      scale.value = withSpring(1);
-    });
+    scale.value = withSpring(0.97, {}, () => { scale.value = withSpring(1); });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -53,25 +47,25 @@ export function BasketCard({ basket }: BasketCardProps) {
         <View style={[styles.bgColor, { backgroundColor: basket.cardColor }]} />
       )}
       <LinearGradient
-        colors={["rgba(0,0,0,0.08)", "rgba(0,0,0,0.72)"]}
-        start={{ x: 0, y: 0 }}
+        colors={["rgba(255,255,255,0)", "rgba(20,24,16,0.62)"]}
+        start={{ x: 0, y: 0.3 }}
         end={{ x: 0, y: 1 }}
-        style={styles.gradient}
+        style={StyleSheet.absoluteFill}
       />
       <View style={styles.content}>
-        <View style={styles.top}>
+        <View style={styles.topBadge}>
           <View style={styles.basketBadge}>
-            <Ionicons name="basket" size={12} color="rgba(255,255,255,0.9)" />
+            <Ionicons name="basket-outline" size={11} color="rgba(255,255,255,0.9)" />
             <Text style={styles.basketBadgeText}>Basket</Text>
           </View>
         </View>
-        <View style={styles.bottom}>
-          <Text style={styles.name}>{basket.name}</Text>
-          <Text style={styles.tagline}>{basket.tagline}</Text>
+        <View style={styles.bottomContent}>
+          <Text style={styles.name} numberOfLines={1}>{basket.name}</Text>
+          <Text style={styles.tagline} numberOfLines={1}>{basket.tagline}</Text>
           <View style={styles.footer}>
             <Text style={styles.price}>AED {basket.price.toFixed(0)}</Text>
             <View style={styles.addBtn}>
-              <Ionicons name="add" size={16} color="#1C1510" />
+              <Ionicons name="add" size={14} color="#1E2414" />
               <Text style={styles.addBtnText}>Add</Text>
             </View>
           </View>
@@ -83,56 +77,52 @@ export function BasketCard({ basket }: BasketCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 240,
-    height: 180,
-    borderRadius: 20,
+    width: 248,
+    height: 186,
+    borderRadius: 22,
     overflow: "hidden",
     marginRight: 14,
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  bgImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  bgColor: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  gradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  bgImage: { ...StyleSheet.absoluteFillObject },
+  bgColor: { ...StyleSheet.absoluteFillObject },
   content: {
     flex: 1,
     padding: 16,
     justifyContent: "space-between",
   },
-  top: {},
+  topBadge: {},
   basketBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.22)",
     alignSelf: "flex-start",
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 20,
   },
   basketBadgeText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.9)",
+    color: "rgba(255,255,255,0.95)",
     letterSpacing: 0.3,
   },
-  bottom: {
-    gap: 3,
-  },
+  bottomContent: { gap: 3 },
   name: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "800",
     color: "#FFFFFF",
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   tagline: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.72)",
-    marginBottom: 8,
+    color: "rgba(255,255,255,0.75)",
+    marginBottom: 10,
   },
   footer: {
     flexDirection: "row",
@@ -140,7 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   price: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: "800",
     color: "#FFFFFF",
     letterSpacing: -0.5,
@@ -149,14 +139,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#FAF7F2",
-    paddingHorizontal: 12,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 13,
     paddingVertical: 7,
     borderRadius: 20,
   },
   addBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#1C1510",
+    color: "#1E2414",
   },
 });

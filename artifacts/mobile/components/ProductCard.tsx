@@ -48,45 +48,55 @@ export function ProductCard({ product }: ProductCardProps) {
     addItem(product);
   };
 
+  const isProduct = product.imageKey?.startsWith("product-");
+
   return (
     <AnimatedPressable
       style={[
         styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-          shadowColor: colors.foreground,
-        },
+        { backgroundColor: colors.card, borderColor: colors.border },
         animStyle,
       ]}
       onPress={handleAdd}
     >
-      <View style={[styles.imageArea, { backgroundColor: productImage ? colors.muted : product.cardColor }]}>
+      <View
+        style={[
+          styles.imageArea,
+          {
+            backgroundColor: productImage
+              ? isProduct ? "#F4F6EE" : colors.muted
+              : product.cardColor + "22",
+          },
+        ]}
+      >
         {productImage ? (
           <Image
             source={productImage}
-            style={styles.productImage}
-            contentFit="contain"
+            style={isProduct ? styles.productImageContain : styles.productImageCover}
+            contentFit={isProduct ? "contain" : "cover"}
           />
         ) : (
-          <View style={styles.colorBlock} />
+          <View style={[styles.colorDot, { backgroundColor: product.cardColor }]} />
         )}
         {product.tag ? (
-          <View style={[styles.tag, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.tagText, { color: colors.primaryForeground }]}>{product.tag}</Text>
+          <View style={[styles.tag, { backgroundColor: colors.accent }]}>
+            <Text style={[styles.tagText, { color: colors.accentForeground }]}>{product.tag}</Text>
           </View>
         ) : null}
       </View>
+
       <View style={styles.info}>
         <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={2}>
           {product.name}
         </Text>
         <Text style={[styles.unit, { color: colors.mutedForeground }]}>{product.unit}</Text>
         <View style={styles.bottom}>
-          <Text style={[styles.price, { color: colors.foreground }]}>
-            <Text style={styles.currency}>AED </Text>
-            {product.price.toFixed(0)}
-          </Text>
+          <View>
+            <Text style={[styles.currency, { color: colors.mutedForeground }]}>AED</Text>
+            <Text style={[styles.price, { color: colors.foreground }]}>
+              {product.price.toFixed(0)}
+            </Text>
+          </View>
           <Pressable
             style={[
               styles.addBtn,
@@ -114,28 +124,35 @@ export function ProductCard({ product }: ProductCardProps) {
 const styles = StyleSheet.create({
   card: {
     width: 152,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     overflow: "hidden",
     marginRight: 12,
+    shadowColor: "#1E2414",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
   imageArea: {
-    height: 118,
+    height: 120,
     width: "100%",
-    position: "relative",
     alignItems: "center",
     justifyContent: "center",
   },
-  productImage: {
+  productImageContain: {
+    width: "85%",
+    height: "85%",
+  },
+  productImageCover: {
     width: "100%",
     height: "100%",
   },
-  colorBlock: {
-    ...StyleSheet.absoluteFillObject,
+  colorDot: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    opacity: 0.7,
   },
   tag: {
     position: "absolute",
@@ -151,7 +168,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   info: {
-    padding: 10,
+    padding: 12,
   },
   name: {
     fontSize: 13,
@@ -161,26 +178,27 @@ const styles = StyleSheet.create({
   },
   unit: {
     fontSize: 11,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   bottom: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
   },
-  price: {
-    fontSize: 15,
-    fontWeight: "800",
-    letterSpacing: -0.3,
-  },
   currency: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "500",
+    marginBottom: 1,
+  },
+  price: {
+    fontSize: 17,
+    fontWeight: "800",
+    letterSpacing: -0.4,
   },
   addBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,

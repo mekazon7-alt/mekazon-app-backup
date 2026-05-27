@@ -65,11 +65,6 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={["#1A0E06", "#241408", "#1A0E06"]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -77,17 +72,19 @@ export default function OnboardingScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeIn.duration(700)} style={styles.logoRow}>
-          <Image
-            source={require("@/assets/images/mekazon-logo.png")}
-            style={styles.logo}
-            contentFit="contain"
-          />
+        <Animated.View entering={FadeIn.duration(600)} style={styles.logoRow}>
+          <View style={styles.logoWrap}>
+            <Image
+              source={require("@/assets/images/mekazon-logo.png")}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(150).duration(600)} style={styles.header}>
-          <Text style={styles.welcome}>Welcome home.</Text>
-          <Text style={styles.headline}>Choose Your Home.</Text>
+        <Animated.View entering={FadeInDown.delay(120).duration(600)} style={styles.header}>
+          <Text style={styles.eyebrow}>Welcome home.</Text>
+          <Text style={styles.headline}>Choose Your{"\n"}Home.</Text>
           <Text style={styles.subheadline}>
             We'll personalize your products, baskets, and deals for where you come from.
           </Text>
@@ -100,55 +97,53 @@ export default function OnboardingScreen() {
             return (
               <Animated.View
                 key={option.id}
-                entering={FadeInDown.delay(250 + index * 80).duration(500)}
+                entering={FadeInDown.delay(220 + index * 70).duration(450)}
               >
                 <AnimatedPressable
                   style={[
                     styles.optionCard,
                     {
-                      borderColor: isSelected ? "#E07030" : "rgba(255,255,255,0.1)",
-                      shadowColor: isSelected ? "#E07030" : "transparent",
-                      shadowOpacity: isSelected ? 0.4 : 0,
-                      shadowRadius: 12,
-                      elevation: isSelected ? 8 : 0,
+                      borderColor: isSelected ? "#4E7234" : "#DDE8C8",
+                      backgroundColor: isSelected ? "#F0F5E8" : "#FFFFFF",
+                      shadowOpacity: isSelected ? 0.12 : 0.05,
                     },
                   ]}
                   onPress={() => handleSelect(option.id)}
                 >
+                  <View style={styles.flagBar}>
+                    {option.flagColors.map((color, i) => (
+                      <View key={i} style={[styles.flagStripe, { backgroundColor: color }]} />
+                    ))}
+                  </View>
+
+                  <View style={styles.optionContent}>
+                    <Text style={[styles.optionName, { color: isSelected ? "#4E7234" : "#1E2414" }]}>
+                      {option.name}
+                    </Text>
+                    <Text style={[styles.optionSubtitle, { color: isSelected ? "#728054" : "#9AAA7A" }]}>
+                      {option.subtitle}
+                    </Text>
+                  </View>
+
                   {cardImage && (
-                    <Image
-                      source={cardImage}
-                      style={styles.cardBgImage}
-                      contentFit="cover"
-                    />
+                    <View style={styles.cardImageWrap}>
+                      <Image
+                        source={cardImage}
+                        style={styles.cardImage}
+                        contentFit="cover"
+                      />
+                      <LinearGradient
+                        colors={["rgba(247,248,242,0)", "rgba(247,248,242,0.6)"]}
+                        start={{ x: 1, y: 0 }}
+                        end={{ x: 0, y: 0 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    </View>
                   )}
-                  <LinearGradient
-                    colors={
-                      isSelected
-                        ? ["rgba(224,112,48,0.55)", "rgba(26,14,6,0.88)"]
-                        : ["rgba(26,14,6,0.45)", "rgba(26,14,6,0.82)"]
-                    }
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.cardOverlay}
-                  >
-                    <View style={styles.flagBar}>
-                      {option.flagColors.map((color, i) => (
-                        <View key={i} style={[styles.flagStripe, { backgroundColor: color }]} />
-                      ))}
-                    </View>
-                    <View style={styles.optionContent}>
-                      <Text style={[styles.optionName, { color: isSelected ? "#FFCF92" : "#FFFFFF" }]}>
-                        {option.name}
-                      </Text>
-                      <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
-                    </View>
-                    {isSelected ? (
-                      <Ionicons name="checkmark-circle" size={24} color="#E07030" style={styles.check} />
-                    ) : (
-                      <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" style={styles.check} />
-                    )}
-                  </LinearGradient>
+
+                  <View style={[styles.checkCircle, { borderColor: isSelected ? "#4E7234" : "#DDE8C8", backgroundColor: isSelected ? "#4E7234" : "transparent" }]}>
+                    {isSelected && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                  </View>
                 </AnimatedPressable>
               </Animated.View>
             );
@@ -159,18 +154,22 @@ export default function OnboardingScreen() {
       <View style={[styles.footer, { paddingBottom: bottomPad + 16 }]}>
         <Animated.View style={btnAnimStyle}>
           <Pressable
-            style={[styles.continueBtn, { opacity: selected ? 1 : 0.45 }]}
+            style={[
+              styles.continueBtn,
+              {
+                backgroundColor: selected ? "#4E7234" : "#DDE8C8",
+              },
+            ]}
             onPress={handleContinue}
             disabled={!selected}
           >
-            <Text style={styles.continueBtnText}>
-              {selectedOption
-                ? `Enter as ${selectedOption.name}`
-                : "Select your home first"}
+            <Text style={[styles.continueBtnText, { color: selected ? "#FFFFFF" : "#9AAA7A" }]}>
+              {selectedOption ? `Continue as ${selectedOption.name}` : "Select your home first"}
             </Text>
-            {selected ? <Ionicons name="arrow-forward" size={20} color="#FFFFFF" /> : null}
+            {selected && <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />}
           </Pressable>
         </Animated.View>
+        <Text style={styles.footerNote}>You can change this anytime in Profile</Text>
       </View>
     </View>
   );
@@ -179,60 +178,68 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1A0E06",
+    backgroundColor: "#F7F8F2",
   },
   scroll: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
   },
   logoRow: {
-    alignItems: "center",
-    marginBottom: 26,
+    alignItems: "flex-start",
+    marginBottom: 28,
+  },
+  logoWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   logo: {
-    width: 68,
-    height: 68,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
-  welcome: {
-    fontSize: 14,
+  eyebrow: {
+    fontSize: 13,
     fontWeight: "600",
-    color: "#E07030",
-    letterSpacing: 0.5,
-    marginBottom: 6,
+    color: "#C4541A",
+    letterSpacing: 0.4,
+    marginBottom: 8,
     textTransform: "uppercase",
   },
   headline: {
-    fontSize: 30,
+    fontSize: 36,
     fontWeight: "800",
-    color: "#FAF0E4",
-    letterSpacing: -0.8,
-    marginBottom: 10,
+    color: "#1E2414",
+    letterSpacing: -1,
+    lineHeight: 42,
+    marginBottom: 12,
   },
   subheadline: {
     fontSize: 15,
-    color: "rgba(250,240,228,0.6)",
+    color: "#728054",
     lineHeight: 22,
   },
   options: {
     gap: 10,
   },
   optionCard: {
-    height: 88,
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 18,
     borderWidth: 1.5,
     overflow: "hidden",
-    shadowOffset: { width: 0, height: 4 },
-  },
-  cardBgImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  cardOverlay: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
+    height: 80,
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
   },
   flagBar: {
     width: 5,
@@ -249,31 +256,47 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   optionName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    marginBottom: 4,
+    marginBottom: 3,
     letterSpacing: -0.2,
   },
   optionSubtitle: {
     fontSize: 12,
-    color: "rgba(250,240,228,0.6)",
+    lineHeight: 16,
   },
-  check: {
-    marginRight: 16,
+  cardImageWrap: {
+    width: 80,
+    height: "100%",
+    position: "relative",
+  },
+  cardImage: {
+    width: "100%",
+    height: "100%",
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+    marginLeft: 4,
   },
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
     paddingTop: 14,
-    backgroundColor: "rgba(26,14,6,0.96)",
+    backgroundColor: "#F7F8F2",
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
+    borderTopColor: "#DDE8C8",
+    gap: 10,
   },
   continueBtn: {
-    backgroundColor: "#C8581C",
     borderRadius: 16,
     paddingVertical: 17,
     flexDirection: "row",
@@ -284,6 +307,11 @@ const styles = StyleSheet.create({
   continueBtnText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FFFFFF",
+  },
+  footerNote: {
+    fontSize: 12,
+    color: "#9AAA7A",
+    textAlign: "center",
+    paddingBottom: 4,
   },
 });

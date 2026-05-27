@@ -1,3 +1,4 @@
 - [Mekazon design system](mekazon-design.md) — olive green primary + terracotta accent + warm cream background; never use dark/black-heavy UI
 - [Mekazon image philosophy](mekazon-images.md) — two distinct image types: real product packaging (trust) vs bright daylight lifestyle (craving/emotion)
 - [Mekazon Shopify architecture](mekazon-shopify-arch.md) — collection-per-country pattern; client auto-switches mock→real via env vars
+- [Mekazon i18n + Location architecture](mekazon-i18n-location.md) — 4-lang i18n with RTL, UAE emirate bottom sheet, 2-step onboarding flow, AsyncStorage keys

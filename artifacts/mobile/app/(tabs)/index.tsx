@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useState } from "react";
 import {
   Platform,
   Pressable,
@@ -16,9 +16,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BasketCard } from "@/components/BasketCard";
 import { ProductCard } from "@/components/ProductCard";
 import { SectionHeader } from "@/components/SectionHeader";
+import { LocationBottomSheet } from "@/components/LocationBottomSheet";
 import { useColors } from "@/hooks/useColors";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { useCart } from "@/context/CartContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { useLocation } from "@/context/LocationContext";
 import { ActivityIndicator } from "react-native";
 
 const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -52,6 +55,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { experience, shopifyProducts, productsLoading } = useHomeCountry();
   const { totalItems } = useCart();
+  const { t } = useLanguage();
+  const { deliveryLabel, selectedEmirate } = useLocation();
+  const [locationSheetVisible, setLocationSheetVisible] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -61,7 +67,7 @@ export default function HomeScreen() {
   const heroImage = HERO_IMAGES[experience.heroImageKey];
   const hour = new Date().getHours();
   const timeGreeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    hour < 12 ? t("goodMorning") : hour < 17 ? t("goodAfternoon") : t("goodEvening");
 
   const lifestyleKeys = (["lifestyle-ugali", "lifestyle-injera", "lifestyle-matooke", "lifestyle-coffee", "lifestyle-spices"] as const).filter(
     (k) => LIFESTYLE_IMAGES[k]
@@ -76,9 +82,14 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={[styles.header, { paddingTop: topPad + 12 }]}>
           <View style={styles.headerLeft}>
-            <Pressable style={[styles.locationPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Pressable
+              style={[styles.locationPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              onPress={() => setLocationSheetVisible(true)}
+            >
               <Ionicons name="location" size={12} color={colors.primary} />
-              <Text style={[styles.locationText, { color: colors.foreground }]}>Dubai, UAE</Text>
+              <Text style={[styles.locationText, { color: colors.foreground }]}>
+                {selectedEmirate ? selectedEmirate.name : t("chooseLocation")}
+              </Text>
               <Ionicons name="chevron-down" size={11} color={colors.mutedForeground} />
             </Pressable>
             <Text style={[styles.greeting, { color: colors.foreground }]}>{timeGreeting}</Text>
@@ -282,6 +293,11 @@ export default function HomeScreen() {
           ))}
         </View>
       </ScrollView>
+
+      <LocationBottomSheet
+        visible={locationSheetVisible}
+        onClose={() => setLocationSheetVisible(false)}
+      />
     </View>
   );
 }

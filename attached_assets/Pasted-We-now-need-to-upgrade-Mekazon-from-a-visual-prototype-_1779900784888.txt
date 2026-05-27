@@ -1,0 +1,347 @@
+We now need to upgrade Mekazon from a visual prototype into a real Shopify-connected mobile app architecture.
+
+CURRENT BUSINESS:
+Mekazon website is built on Shopify:
+https://www.mekazon.com
+
+The app must be connected to the existing Shopify backend so that:
+- When we add a product on Shopify, it can appear in the app automatically
+- When we add products to a country collection on Shopify, the correct country version of the app updates automatically
+- When we add products to Shopify categories/collections, the app can use those collections for app sections
+- Shopify remains the source of truth for products, prices, inventory, collections, variants, cart, and checkout
+
+IMPORTANT:
+Do not build this as a fake standalone grocery app.
+Build it as a Shopify-powered headless mobile storefront.
+
+USE SHOPIFY COLLECTIONS AS THE MAIN STRUCTURE:
+Mekazon already has country collection pages and category collections.
+
+Country personalization should map to Shopify collection handles:
+
+- Uganda experience → Shopify Uganda collection
+- Kenya experience → Shopify Kenya collection
+- Ethiopia experience → Shopify Ethiopia collection
+- Other African Countries → other African country collections
+- Show Me Everything → all products / main catalog
+
+The app should fetch products by collection handle.
+
+Create this architecture:
+
+/src
+  /components
+    Header.tsx
+    BottomNav.tsx
+    ProductCard.tsx
+    BasketCard.tsx
+    CollectionSection.tsx
+    LocationSelector.tsx
+    CountrySelector.tsx
+    ShopifyProductGrid.tsx
+  /screens
+    WelcomeScreen.tsx
+    ChooseHomeScreen.tsx
+    HomeScreen.tsx
+    CollectionScreen.tsx
+    ProductDetailScreen.tsx
+    CartScreen.tsx
+    CheckoutScreen.tsx
+    ProfileScreen.tsx
+  /lib
+    shopifyClient.ts
+    shopifyQueries.ts
+    shopifyMapper.ts
+    collectionMapping.ts
+    locationConfig.ts
+    personalization.ts
+  /data
+    mockShopifyProducts.ts
+    mockCollections.ts
+
+FIRST APP FLOW:
+1. Welcome screen
+2. Choose Your Home screen
+3. Location selection screen
+4. Personalized home screen
+5. Product listing / collection pages
+6. Product detail
+7. Cart
+8. Checkout via Shopify checkout URL
+9. Profile / settings
+
+WELCOME SCREEN:
+This screen is currently missing.
+Add it before country selection.
+
+It should feel emotional, warm, and food-focused.
+
+Text:
+“Welcome to Mekazon.”
+“Your African food, culture, and comfort — delivered across the UAE.”
+Button:
+“Start”
+
+Use warm food / African kitchen / grocery lifestyle image.
+
+CHOOSE HOME SCREEN:
+Let user select:
+- Uganda
+- Kenya
+- Ethiopia
+- Other African Countries
+- Show Me Everything
+
+But make the language emotional:
+“Choose the flavors that feel like home.”
+
+After selection, save preference in local state/localStorage.
+
+LOCATION SELECTION:
+The current delivery location is static. Fix this.
+
+Add UAE emirate delivery selector:
+- Dubai
+- Abu Dhabi
+- Sharjah
+- Ajman
+- Ras Al Khaimah
+- Fujairah
+- Umm Al Quwain
+
+The selected emirate should appear in the header.
+User must be able to change emirate later.
+
+Delivery messages:
+- Dubai: Same-day delivery available
+- Other Emirates: Next-day delivery available
+- Add a note that delivery options can be updated later
+
+COUNTRY SWITCHING:
+User must be able to go back and change their country/home preference anytime.
+
+Add this in:
+- Profile screen
+- Header dropdown or settings
+- Home screen small “Change home” option
+
+The app should not trap the user in one country.
+
+SHOPIFY COLLECTION MAPPING:
+Create a file called collectionMapping.ts.
+
+It should define mappings like:
+
+Uganda:
+countryCollectionHandle: "uganda"
+categoryCollections:
+- fresh: "uganda-fresh"
+- staples: "uganda-staples"
+- spices: "uganda-spices"
+- sauces: "uganda-sauces"
+
+Kenya:
+countryCollectionHandle: "kenya"
+categoryCollections:
+- fresh: "kenya-fresh"
+- staples: "kenya-staples"
+- spices: "kenya-spices"
+- sauces: "kenya-sauces"
+
+Ethiopia:
+countryCollectionHandle: "ethiopia"
+categoryCollections:
+- fresh: "ethiopia-fresh"
+- staples: "ethiopia-staples"
+- spices: "ethiopia-spices"
+- coffee: "ethiopia-coffee"
+
+IMPORTANT:
+Use placeholder handles for now, but make them easy to edit because actual Shopify handles may be different.
+
+CATEGORY STRUCTURE:
+The app currently uses nice labels like:
+- Fresh
+- Staples
+- Sauces
+- Spices
+- Meal Inspiration
+- Made for Uganda/Kenya/Ethiopia
+
+But Shopify website collections may have different names.
+
+So create a mapping layer where app category names can map to Shopify collection handles.
+
+Example:
+App label: “Fresh”
+Shopify handle: “fresh-vegetables” or “uganda-fresh”
+
+App label: “Staples”
+Shopify handle: “flour-rice-staples” or “maize-flour”
+
+This way the app design can stay beautiful even if Shopify collection names are different.
+
+SHOPIFY API:
+Create a Shopify Storefront API client.
+
+Use environment variables:
+VITE_SHOPIFY_STORE_DOMAIN
+VITE_SHOPIFY_STOREFRONT_ACCESS_TOKEN
+VITE_SHOPIFY_API_VERSION
+
+Create functions:
+- getCollections()
+- getCollectionByHandle(handle)
+- getProductsByCollectionHandle(handle)
+- getProductByHandle(handle)
+- createCart()
+- addToCart(cartId, variantId, quantity)
+- updateCartLine()
+- removeCartLine()
+- getCart()
+- getCheckoutUrl(cartId)
+
+For now, use mock data fallback if Shopify credentials are not available.
+
+This is important:
+If environment variables are missing, app should still run using mock products.
+If environment variables are present, app should use real Shopify data.
+
+PRODUCT DATA:
+Map Shopify products into app-friendly format:
+id
+handle
+title
+description
+price
+currency
+image
+images
+variantId
+availableForSale
+collection
+country
+category
+tags
+
+CART:
+Cart should use Shopify cart logic.
+Cart should support:
+- add to cart
+- quantity increase/decrease
+- remove item
+- subtotal
+- delivery fee placeholder
+- total
+- checkout button
+
+Checkout button should open Shopify checkout URL.
+
+REAL APP REQUIREMENTS:
+This app should be prepared to become:
+- mobile web app
+- PWA
+- iOS app wrapper later
+- Android app wrapper later
+
+Add PWA readiness:
+- responsive mobile-first layout
+- app-like navigation
+- installable structure where possible
+- clean routing
+- persistent preferences with localStorage
+
+DO NOT add native iOS/Android code yet.
+Build the real mobile web app first.
+Later we can wrap it for App Store and Google Play using Capacitor or React Native if needed.
+
+DESIGN REQUIREMENTS:
+Keep the improved warm green direction, but make it less dark.
+Use:
+- warm cream background
+- soft sage green
+- deep olive green for accents
+- terracotta CTA accents
+- food-first imagery
+- bright natural food visuals
+- premium but warm UI
+
+Avoid:
+- black-heavy screens
+- fintech style
+- dashboard feeling
+- generic ecommerce templates
+
+HOMEPAGE AFTER PERSONALIZATION:
+The home page should be generated from:
+1. selected country/home preference
+2. selected emirate
+3. Shopify collection products
+4. mapped app categories
+
+Sections:
+- Header with emirate and change location
+- Greeting
+- Personalized hero
+- Buy Again
+- Search
+- App categories
+- My Baskets
+- Meal Inspiration
+- Products from selected country collection
+- Fresh / Staples / Spices collection sections
+- Trust bar
+- Bottom navigation
+
+IMPORTANT:
+If Shopify collection has no products or API is unavailable, show beautiful mock products and an empty-state message:
+“Products from this collection will appear here once connected to Shopify.”
+
+DELIVERY:
+Add locationConfig.ts:
+Dubai:
+sameDay: true
+message: “Same-day delivery available in Dubai”
+
+All other Emirates:
+sameDay: false
+message: “Next-day delivery available across UAE”
+
+PROFILE SCREEN:
+Include:
+- Change home preference
+- Change delivery emirate
+- Notification preferences
+- Order history placeholder
+- Saved address placeholder
+- WhatsApp support placeholder
+
+NOTIFICATION PREFERENCES:
+Do not build push notifications yet.
+Just create UI placeholders:
+- Weekly basket reminder
+- Fresh stock alerts
+- Country-specific new arrivals
+- Reorder reminders
+
+DEPLOYMENT READINESS:
+Make the code clean and production-oriented.
+Add comments explaining where Shopify credentials go.
+Add README section explaining:
+1. How to add Shopify Storefront API credentials
+2. How to update collection handles
+3. How to map Shopify collections to app categories
+4. How to deploy as PWA
+5. How to prepare later for App Store / Google Play
+
+GOAL:
+Build this as a real foundation, not a visual-only prototype.
+
+The app should be:
+- connected-ready with Shopify
+- country-personalized
+- location-aware for UAE emirates
+- category-mapped to Shopify collections
+- emotionally warm
+- mobile-first
+- ready to evolve into a real publishable app

@@ -16,6 +16,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HomeCountryProvider } from "@/context/HomeCountryContext";
 import { CartProvider } from "@/context/CartContext";
+import { LanguageProvider } from "@/context/LanguageContext";
+import { LocationProvider } from "@/context/LocationContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -25,6 +27,7 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
@@ -53,11 +56,15 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <HomeCountryProvider>
-                <CartProvider>
-                  <RootLayoutNav />
-                </CartProvider>
-              </HomeCountryProvider>
+              <LanguageProvider>
+                <LocationProvider>
+                  <HomeCountryProvider>
+                    <CartProvider>
+                      <RootLayoutNav />
+                    </CartProvider>
+                  </HomeCountryProvider>
+                </LocationProvider>
+              </LanguageProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

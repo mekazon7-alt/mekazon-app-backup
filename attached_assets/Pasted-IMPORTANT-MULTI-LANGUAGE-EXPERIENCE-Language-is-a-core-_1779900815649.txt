@@ -1,0 +1,88 @@
+IMPORTANT — MULTI-LANGUAGE EXPERIENCE
+
+Language is a core part of Mekazon’s emotional experience.
+
+The app should not be English-only.
+
+Add language support architecture from the beginning.
+
+MVP languages:
+- English
+- Arabic
+- Amharic
+- Swahili
+
+Later expandable languages:
+- Luganda
+- Oromo
+- Somali
+- Tigrinya
+- French
+
+Language UX:
+- On first onboarding, after “Choose Your Home,” ask:
+  “Choose your language”
+- Also allow changing language later from Profile/Settings.
+- If user chooses Ethiopia, suggest Amharic first but still allow English/Arabic/Swahili.
+- If user chooses Kenya or Uganda, suggest Swahili first but still allow English/Arabic/Amharic.
+- Arabic should always be available because the app operates in UAE/GCC.
+
+Technical architecture:
+Use an i18n translation system.
+
+Create:
+/src/i18n
+  en.json
+  ar.json
+  am.json
+  sw.json
+  index.ts
+
+All static app text should come from translation files, not hardcoded strings.
+
+Examples:
+welcomeTitle:
+English: “Welcome to Mekazon.”
+Arabic: “مرحباً بك في ميكازون”
+Amharic: “እንኳን ወደ ሜካዞን በደህና መጡ”
+Swahili: “Karibu Mekazon”
+
+homeSubtitle:
+English: “Your African food, culture, and comfort — delivered across the UAE.”
+Arabic: “طعامك الأفريقي وثقافتك وراحة بيتك — نوصلها في الإمارات.”
+Amharic: “የአፍሪካ ምግብዎ፣ ባህልዎ እና የቤት ስሜትዎ — በመላው ኤምሬትስ ይደርሳል።”
+Swahili: “Chakula, utamaduni na ladha ya nyumbani — tunakuletea UAE.”
+
+For Arabic:
+- Support RTL layout direction.
+- When Arabic is selected, set document direction to rtl.
+- Make sure layout does not break.
+
+Important:
+Product names from Shopify should remain as they are unless translated fields are available later.
+
+For now:
+- translate app interface
+- buttons
+- headings
+- navigation
+- onboarding
+- checkout labels
+- delivery messages
+- notification preferences
+
+Do not automatically translate Shopify product names yet unless a translation field exists.
+
+Future-ready:
+Prepare the app so later Shopify product metafields can include translated titles/descriptions:
+- title_en
+- title_ar
+- title_am
+- title_sw
+- description_en
+- description_ar
+- description_am
+- description_sw
+
+Goal:
+Every user should feel Mekazon can speak to them emotionally and culturally.

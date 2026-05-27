@@ -1,0 +1,184 @@
+IMPORTANT UPDATE — LOCATION, CHECKOUT, SHOPIFY ORDERS, AND FLEXIBLE APP STRATEGY
+
+Do not make delivery location a separate onboarding page.
+
+LOCATION UX:
+The app should have the delivery location at the top of the home screen/header, similar to food/grocery apps.
+
+It should say:
+“Deliver to”
+or
+“Choose location”
+
+When the user taps it, open a bottom sheet or modal, not a full separate page.
+
+The location modal should allow:
+- selecting emirate
+- entering area
+- entering full address later at checkout
+
+Emirates:
+- Dubai
+- Abu Dhabi
+- Sharjah
+- Ajman
+- Ras Al Khaimah
+- Fujairah
+- Umm Al Quwain
+
+The header should show:
+Deliver to: Dubai
+or
+Choose location
+
+Do not force location selection before the user sees the app.
+Let the user browse first, but encourage choosing location for accurate delivery.
+
+Delivery logic:
+- Dubai: same-day delivery available
+- Other Emirates: next-day delivery available
+- Show this message after the user selects location
+
+COUNTRY / HOME SELECTION:
+Keep “Choose Your Home” as the emotional personalization onboarding.
+This is different from delivery location.
+
+Country preference = what products and experience the user sees.
+Delivery location = where the order will be delivered.
+
+User should always be able to change country/home preference from:
+- profile
+- home screen small link
+- settings
+
+SHOPIFY BACKEND:
+Mekazon website is Shopify.
+The app must use Shopify as the backend and admin system.
+
+Shopify must remain the source of truth for:
+- products
+- collections
+- prices
+- variants
+- inventory
+- customers if possible
+- cart
+- checkout
+- orders
+- online payment
+- cash on delivery
+- order tracking/admin
+
+ORDER REQUIREMENT:
+Any order placed from the app must appear in Shopify Orders admin.
+
+This is very important.
+
+Do not create a separate app order system unless absolutely necessary.
+
+Use Shopify cart and checkout flow so orders are captured inside Shopify.
+
+PAYMENT OPTIONS:
+At checkout, customers should be able to choose:
+- Cash on Delivery
+- Online Payment
+
+Because Shopify already handles checkout/payment methods, the app should create a Shopify cart and send the customer to Shopify checkout URL.
+
+The Shopify checkout should handle:
+- online payment
+- cash on delivery if enabled in Shopify
+- taxes/VAT if configured
+- delivery/shipping methods if configured
+- order creation inside Shopify admin
+
+In the app checkout screen:
+show payment options as UI, but final checkout should use Shopify checkout so orders reflect in Shopify.
+
+If full payment method control is not possible through Storefront API alone, explain this clearly in comments and use Shopify checkout redirect as the reliable MVP method.
+
+CART LOGIC:
+Use Shopify Cart API architecture:
+- createCart()
+- addToCart()
+- updateCartLine()
+- removeCartLine()
+- getCart()
+- checkoutUrl
+
+Cart checkout button should open Shopify checkoutUrl.
+
+PRODUCT / COLLECTION SYNC:
+When a product is added in Shopify and assigned to a Shopify collection, the app should display it automatically.
+
+Use Shopify collections as the source for:
+- country pages
+- category sections
+- home page sections
+
+Collection mapping should be editable.
+
+Example:
+App label: Fresh
+Shopify collection handle: fresh-vegetables
+
+App label: Staples
+Shopify collection handle: grocery-staples
+
+App label: Uganda
+Shopify collection handle: uganda
+
+App label: Kenya
+Shopify collection handle: kenya
+
+App label: Ethiopia
+Shopify collection handle: ethiopia
+
+The app should not depend only on hardcoded products.
+
+Hardcoded mock products should only be fallback if Shopify API is not connected yet.
+
+ASK US WHAT YOU NEED:
+Before making final decisions, ask what information you need from us to make this the best possible app.
+
+Create a section in README or setup screen called:
+“Information Needed From Mekazon Team”
+
+Ask for:
+1. Shopify store domain
+2. Shopify Storefront API access token
+3. Actual Shopify collection handles
+4. Country collection handles
+5. Category collection handles
+6. Delivery rules by emirate
+7. COD availability rules
+8. Online payment method status
+9. Shipping rates
+10. Brand logo assets
+11. Product image standards
+12. WhatsApp support number
+13. Return/refund policy
+14. Terms and privacy policy links
+15. App name for App Store / Google Play
+16. Whether customer login is required or guest checkout is allowed
+
+BE FLEXIBLE AND STRATEGIC:
+Do not blindly follow only the current UI.
+
+Make suggestions if something should be improved.
+
+If a better app structure, flow, or architecture is needed, propose it.
+
+The goal is to build the best real Mekazon app, not just copy the prototype.
+
+IMPORTANT TECH GOAL:
+Build a real Shopify-connected mobile web app/PWA foundation that can later become:
+- iOS app
+- Android app
+- Google Play app
+- Apple App Store app
+
+Do not build native mobile code yet unless necessary.
+Build clean React/Tailwind/PWA structure first.
+
+The app should be ready for deployment and later wrapping with Capacitor if needed.

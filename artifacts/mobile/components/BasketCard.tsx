@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -12,6 +13,16 @@ import Animated, {
 import { useColors } from "@/hooks/useColors";
 import type { Basket } from "@/constants/personalization";
 
+const LIFESTYLE_IMAGES: Record<string, ReturnType<typeof require>> = {
+  "lifestyle-ugali": require("@/assets/images/lifestyle-ugali.png"),
+  "lifestyle-injera": require("@/assets/images/lifestyle-injera.png"),
+  "lifestyle-matooke": require("@/assets/images/lifestyle-matooke.png"),
+  "lifestyle-coffee": require("@/assets/images/lifestyle-coffee.png"),
+  "lifestyle-spices": require("@/assets/images/lifestyle-spices.png"),
+  "hero-pan-african": require("@/assets/images/hero-pan-african.png"),
+  "hero-kenya": require("@/assets/images/hero-kenya.png"),
+};
+
 interface BasketCardProps {
   basket: Basket;
 }
@@ -21,6 +32,9 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function BasketCard({ basket }: BasketCardProps) {
   const colors = useColors();
   const scale = useSharedValue(1);
+  const lifestyleImage = basket.lifestyleImageKey
+    ? LIFESTYLE_IMAGES[basket.lifestyleImageKey]
+    : null;
 
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -33,98 +47,94 @@ export function BasketCard({ basket }: BasketCardProps) {
 
   return (
     <AnimatedPressable style={[styles.card, animStyle]} onPress={handlePress}>
+      {lifestyleImage ? (
+        <Image source={lifestyleImage} style={styles.bgImage} contentFit="cover" />
+      ) : (
+        <View style={[styles.bgColor, { backgroundColor: basket.cardColor }]} />
+      )}
       <LinearGradient
-        colors={[basket.cardColor, darken(basket.cardColor, 0.4)]}
+        colors={["rgba(0,0,0,0.08)", "rgba(0,0,0,0.72)"]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 0, y: 1 }}
         style={styles.gradient}
-      >
-        <View style={styles.content}>
-          <View style={styles.top}>
-            <Text style={styles.name}>{basket.name}</Text>
-            <Text style={styles.tagline}>{basket.tagline}</Text>
+      />
+      <View style={styles.content}>
+        <View style={styles.top}>
+          <View style={styles.basketBadge}>
+            <Ionicons name="basket" size={12} color="rgba(255,255,255,0.9)" />
+            <Text style={styles.basketBadgeText}>Basket</Text>
           </View>
-          <View style={styles.items}>
-            {basket.items.slice(0, 3).map((item, i) => (
-              <View key={i} style={styles.itemPill}>
-                <Text style={styles.itemText}>{item}</Text>
-              </View>
-            ))}
-            {basket.items.length > 3 && (
-              <View style={styles.itemPill}>
-                <Text style={styles.itemText}>+{basket.items.length - 3} more</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.bottom}>
-            <Text style={styles.price}>
-              {basket.currency} {basket.price.toFixed(0)}
-            </Text>
+        </View>
+        <View style={styles.bottom}>
+          <Text style={styles.name}>{basket.name}</Text>
+          <Text style={styles.tagline}>{basket.tagline}</Text>
+          <View style={styles.footer}>
+            <Text style={styles.price}>AED {basket.price.toFixed(0)}</Text>
             <View style={styles.addBtn}>
-              <Ionicons name="bag-add" size={16} color="#0A0A0A" />
-              <Text style={styles.addBtnText}>Add Basket</Text>
+              <Ionicons name="add" size={16} color="#1C1510" />
+              <Text style={styles.addBtnText}>Add</Text>
             </View>
           </View>
         </View>
-      </LinearGradient>
+      </View>
     </AnimatedPressable>
   );
-}
-
-function darken(hex: string, amount: number): string {
-  const num = parseInt(hex.slice(1), 16);
-  const r = Math.max(0, (num >> 16) - Math.round(255 * amount));
-  const g = Math.max(0, ((num >> 8) & 0xff) - Math.round(255 * amount));
-  const b = Math.max(0, (num & 0xff) - Math.round(255 * amount));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
 }
 
 const styles = StyleSheet.create({
   card: {
     width: 240,
-    height: 170,
-    borderRadius: 18,
+    height: 180,
+    borderRadius: 20,
     overflow: "hidden",
     marginRight: 14,
   },
+  bgImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  bgColor: {
+    ...StyleSheet.absoluteFillObject,
+  },
   gradient: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
   content: {
     flex: 1,
     padding: 16,
     justifyContent: "space-between",
   },
-  top: {
+  top: {},
+  basketBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  basketBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.9)",
+    letterSpacing: 0.3,
+  },
+  bottom: {
+    gap: 3,
   },
   name: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "800",
     color: "#FFFFFF",
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   tagline: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.72)",
+    marginBottom: 8,
   },
-  items: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-  },
-  itemPill: {
-    backgroundColor: "rgba(0,0,0,0.25)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 20,
-  },
-  itemText: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.9)",
-    fontWeight: "500",
-  },
-  bottom: {
+  footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -138,8 +148,8 @@ const styles = StyleSheet.create({
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    backgroundColor: "#F5C400",
+    gap: 4,
+    backgroundColor: "#FAF7F2",
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
@@ -147,6 +157,6 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0A0A0A",
+    color: "#1C1510",
   },
 });

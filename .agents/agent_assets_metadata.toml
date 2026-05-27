@@ -30,3 +30,63 @@ id = "wY3tPYKt2RlwrB6LqlqYl"
 uri = "file://artifacts/mobile/assets/images/hero-pan-african.png"
 type = "image"
 title = "pan african market spread"
+
+[[generated]]
+id = "PNuwnsvcp1i8rlW8dxeUg"
+uri = "file://artifacts/mobile/assets/images/lifestyle-ugali.png"
+type = "image"
+title = "steaming ugali lifestyle"
+
+[[generated]]
+id = "7rIw__wZ6veFOTTEry9tM"
+uri = "file://artifacts/mobile/assets/images/lifestyle-injera.png"
+type = "image"
+title = "injera lifestyle"
+
+[[generated]]
+id = "K_TUE4wXVZzd-NSDAA3tz"
+uri = "file://artifacts/mobile/assets/images/lifestyle-matooke.png"
+type = "image"
+title = "matooke lifestyle"
+
+[[generated]]
+id = "YHry1VY6k1yRxO6TpNnxJ"
+uri = "file://artifacts/mobile/assets/images/lifestyle-coffee.png"
+type = "image"
+title = "ethiopian coffee ceremony"
+
+[[generated]]
+id = "TYve4l3j9axiio_FPN0Jt"
+uri = "file://artifacts/mobile/assets/images/lifestyle-spices.png"
+type = "image"
+title = "african spices collection"
+
+[[generated]]
+id = "keNIbrTYLbm6HBY85ElHc"
+uri = "file://artifacts/mobile/assets/images/product-royco.png"
+type = "image"
+title = "royco product shot"
+
+[[generated]]
+id = "S4ml8jKZPCJh4LazkPJfD"
+uri = "file://artifacts/mobile/assets/images/product-unga.png"
+type = "image"
+title = "maize flour product shot"
+
+[[generated]]
+id = "S69k29rur8zZ1Pt8_qvlA"
+uri = "file://artifacts/mobile/assets/images/product-teff.png"
+type = "image"
+title = "teff flour product shot"
+
+[[generated]]
+id = "YhuN5LpP_2Lvm_FSeRyUK"
+uri = "file://artifacts/mobile/assets/images/product-berbere.png"
+type = "image"
+title = "berbere spice product shot"
+
+[[generated]]
+id = "7njHLKLw--KKnLRUFsv9B"
+uri = "file://artifacts/mobile/assets/images/product-coffee.png"
+type = "image"
+title = "ethiopian coffee product shot"

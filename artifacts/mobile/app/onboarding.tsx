@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -23,6 +23,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
+
+const CARD_IMAGES: Record<string, ReturnType<typeof require>> = {
+  "lifestyle-matooke": require("@/assets/images/lifestyle-matooke.png"),
+  "lifestyle-ugali": require("@/assets/images/lifestyle-ugali.png"),
+  "lifestyle-injera": require("@/assets/images/lifestyle-injera.png"),
+  "hero-pan-african": require("@/assets/images/hero-pan-african.png"),
+};
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -52,68 +59,96 @@ export default function OnboardingScreen() {
 
   const btnAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: btnScale.value }],
-    opacity: selected ? 1 : 0.4,
   }));
+
+  const selectedOption = ONBOARDING_OPTIONS.find((o) => o.id === selected);
 
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#0A0A0A", "#111111", "#0A0A0A"]}
+        colors={["#1A0E06", "#241408", "#1A0E06"]}
         style={StyleSheet.absoluteFill}
       />
+
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: topPad + 20, paddingBottom: bottomPad + 120 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: topPad + 20, paddingBottom: bottomPad + 130 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeIn.duration(600)} style={styles.logoRow}>
+        <Animated.View entering={FadeIn.duration(700)} style={styles.logoRow}>
           <Image
             source={require("@/assets/images/mekazon-logo.png")}
             style={styles.logo}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.header}>
+        <Animated.View entering={FadeInDown.delay(150).duration(600)} style={styles.header}>
+          <Text style={styles.welcome}>Welcome home.</Text>
           <Text style={styles.headline}>Choose Your Home.</Text>
           <Text style={styles.subheadline}>
-            Mekazon personalizes everything — your products, baskets, and deals — based on where you come from.
+            We'll personalize your products, baskets, and deals for where you come from.
           </Text>
         </Animated.View>
 
         <View style={styles.options}>
           {ONBOARDING_OPTIONS.map((option, index) => {
             const isSelected = selected === option.id;
+            const cardImage = CARD_IMAGES[option.cardImageKey];
             return (
               <Animated.View
                 key={option.id}
-                entering={FadeInDown.delay(300 + index * 80).duration(500)}
+                entering={FadeInDown.delay(250 + index * 80).duration(500)}
               >
                 <AnimatedPressable
                   style={[
                     styles.optionCard,
                     {
-                      borderColor: isSelected ? "#F5C400" : "#2A2A2A",
-                      backgroundColor: isSelected ? "rgba(245,196,0,0.07)" : "#141414",
+                      borderColor: isSelected ? "#E07030" : "rgba(255,255,255,0.1)",
+                      shadowColor: isSelected ? "#E07030" : "transparent",
+                      shadowOpacity: isSelected ? 0.4 : 0,
+                      shadowRadius: 12,
+                      elevation: isSelected ? 8 : 0,
                     },
                   ]}
                   onPress={() => handleSelect(option.id)}
                 >
-                  <View style={styles.flagBar}>
-                    {option.flagColors.map((color, i) => (
-                      <View key={i} style={[styles.flagStripe, { backgroundColor: color }]} />
-                    ))}
-                  </View>
-                  <View style={styles.optionContent}>
-                    <Text style={[styles.optionName, { color: isSelected ? "#F5C400" : "#FFFFFF" }]}>
-                      {option.name}
-                    </Text>
-                    <Text style={styles.optionSubtitle} numberOfLines={1}>{option.subtitle}</Text>
-                  </View>
-                  {isSelected ? (
-                    <Ionicons name="checkmark-circle" size={22} color="#F5C400" style={styles.check} />
-                  ) : (
-                    <Ionicons name="chevron-forward" size={18} color="#555" style={styles.check} />
+                  {cardImage && (
+                    <Image
+                      source={cardImage}
+                      style={styles.cardBgImage}
+                      contentFit="cover"
+                    />
                   )}
+                  <LinearGradient
+                    colors={
+                      isSelected
+                        ? ["rgba(224,112,48,0.55)", "rgba(26,14,6,0.88)"]
+                        : ["rgba(26,14,6,0.45)", "rgba(26,14,6,0.82)"]
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.cardOverlay}
+                  >
+                    <View style={styles.flagBar}>
+                      {option.flagColors.map((color, i) => (
+                        <View key={i} style={[styles.flagStripe, { backgroundColor: color }]} />
+                      ))}
+                    </View>
+                    <View style={styles.optionContent}>
+                      <Text style={[styles.optionName, { color: isSelected ? "#FFCF92" : "#FFFFFF" }]}>
+                        {option.name}
+                      </Text>
+                      <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+                    </View>
+                    {isSelected ? (
+                      <Ionicons name="checkmark-circle" size={24} color="#E07030" style={styles.check} />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" style={styles.check} />
+                    )}
+                  </LinearGradient>
                 </AnimatedPressable>
               </Animated.View>
             );
@@ -124,14 +159,16 @@ export default function OnboardingScreen() {
       <View style={[styles.footer, { paddingBottom: bottomPad + 16 }]}>
         <Animated.View style={btnAnimStyle}>
           <Pressable
-            style={[styles.continueBtn, { opacity: selected ? 1 : 0.5 }]}
+            style={[styles.continueBtn, { opacity: selected ? 1 : 0.45 }]}
             onPress={handleContinue}
             disabled={!selected}
           >
             <Text style={styles.continueBtnText}>
-              {selected ? `Enter as ${ONBOARDING_OPTIONS.find((o) => o.id === selected)?.name}` : "Select your home first"}
+              {selectedOption
+                ? `Enter as ${selectedOption.name}`
+                : "Select your home first"}
             </Text>
-            {selected ? <Ionicons name="arrow-forward" size={20} color="#0A0A0A" /> : null}
+            {selected ? <Ionicons name="arrow-forward" size={20} color="#FFFFFF" /> : null}
           </Pressable>
         </Animated.View>
       </View>
@@ -142,57 +179,72 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0A0A0A",
+    backgroundColor: "#1A0E06",
   },
   scroll: {
     paddingHorizontal: 20,
   },
   logoRow: {
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: 26,
   },
   logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
+    width: 68,
+    height: 68,
+    borderRadius: 16,
   },
   header: {
-    marginBottom: 28,
+    marginBottom: 24,
+  },
+  welcome: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#E07030",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textTransform: "uppercase",
   },
   headline: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -1,
+    color: "#FAF0E4",
+    letterSpacing: -0.8,
     marginBottom: 10,
   },
   subheadline: {
     fontSize: 15,
-    color: "#888888",
+    color: "rgba(250,240,228,0.6)",
     lineHeight: 22,
   },
   options: {
     gap: 10,
   },
   optionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
+    height: 88,
+    borderRadius: 18,
     borderWidth: 1.5,
     overflow: "hidden",
+    shadowOffset: { width: 0, height: 4 },
+  },
+  cardBgImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  cardOverlay: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
   flagBar: {
-    width: 6,
+    width: 5,
     height: "100%",
     flexDirection: "column",
-    minHeight: 72,
   },
   flagStripe: {
     flex: 1,
   },
   optionContent: {
     flex: 1,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingLeft: 16,
     paddingRight: 8,
   },
@@ -204,7 +256,7 @@ const styles = StyleSheet.create({
   },
   optionSubtitle: {
     fontSize: 12,
-    color: "#666666",
+    color: "rgba(250,240,228,0.6)",
   },
   check: {
     marginRight: 16,
@@ -215,13 +267,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingTop: 12,
-    backgroundColor: "rgba(10,10,10,0.95)",
+    paddingTop: 14,
+    backgroundColor: "rgba(26,14,6,0.96)",
     borderTopWidth: 1,
-    borderTopColor: "#1E1E1E",
+    borderTopColor: "rgba(255,255,255,0.06)",
   },
   continueBtn: {
-    backgroundColor: "#F5C400",
+    backgroundColor: "#C8581C",
     borderRadius: 16,
     paddingVertical: 17,
     flexDirection: "row",
@@ -232,6 +284,6 @@ const styles = StyleSheet.create({
   continueBtnText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0A0A0A",
+    color: "#FFFFFF",
   },
 });

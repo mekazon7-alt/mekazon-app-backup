@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import type { Basket } from "@/constants/personalization";
+import { useImageStore } from "@/context/ImageStoreContext";
 
 const LIFESTYLE_IMAGES: Record<string, ReturnType<typeof require>> = {
   "lifestyle-ugali": require("@/assets/images/lifestyle-ugali.png"),
@@ -30,7 +31,13 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function BasketCard({ basket }: BasketCardProps) {
   const scale = useSharedValue(1);
-  const lifestyleImage = basket.lifestyleImageKey ? LIFESTYLE_IMAGES[basket.lifestyleImageKey] : null;
+  const { uriMap } = useImageStore();
+  const storedUri = uriMap["basket:" + basket.id];
+  const lifestyleImage = storedUri
+    ? { uri: storedUri }
+    : basket.lifestyleImageKey
+      ? LIFESTYLE_IMAGES[basket.lifestyleImageKey]
+      : null;
 
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 

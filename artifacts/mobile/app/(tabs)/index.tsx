@@ -27,6 +27,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
 import { useAppContent } from "@/context/AppContentContext";
+import { useImageStore } from "@/context/ImageStoreContext";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
 import { LANGUAGE_META, COUNTRY_SUGGESTED_LANGUAGE, type SupportedLanguage } from "@/lib/i18n";
 import { HERO_COPY, HOME_SECTIONS, TRUST_ITEMS } from "@/constants/appContent";
@@ -66,6 +67,7 @@ export default function HomeScreen() {
   const { t, language, setLanguage } = useLanguage();
   const { deliveryLabel, selectedEmirate } = useLocation();
   const { getBasketsForCountry, getMealsForCountry, getCategoriesForCountry } = useAppContent();
+  const { uriMap } = useImageStore();
 
   const [locationSheetVisible, setLocationSheetVisible] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -111,7 +113,9 @@ export default function HomeScreen() {
 
   if (!experience) return null;
 
-  const heroImage = HERO_IMAGES[experience.heroImageKey];
+  const heroStoredUri = uriMap["hero:" + homeCountry];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const heroImage: any = heroStoredUri ? { uri: heroStoredUri } : HERO_IMAGES[experience.heroImageKey];
   // Use UAE (Asia/Dubai, UTC+4) time for the greeting, regardless of device timezone
   const uaeHour = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Dubai" })
@@ -361,7 +365,8 @@ export default function HomeScreen() {
               contentContainerStyle={styles.horizontalScroll}
             >
               {adminMeals.map((meal) => {
-                const image = LIFESTYLE_IMAGES[meal.lifestyleImageKey];
+                const mealStoredUri = uriMap["meal:" + meal.id];
+                const image = mealStoredUri ? { uri: mealStoredUri } : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
                 if (!image) return null;
                 return (
                   <Pressable
@@ -538,7 +543,9 @@ export default function HomeScreen() {
       <Modal visible={!!selectedMeal} animationType="slide" transparent>
         <Pressable style={styles.modalOverlay} onPress={() => setSelectedMeal(null)} />
         {selectedMeal && (() => {
-          const image = LIFESTYLE_IMAGES[selectedMeal.lifestyleImageKey];
+          const recipeStoredUri = uriMap["meal:" + selectedMeal.id];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const image: any = recipeStoredUri ? { uri: recipeStoredUri } : LIFESTYLE_IMAGES[selectedMeal.lifestyleImageKey];
           return (
             <Animated.View
               entering={FadeInDown.duration(300)}

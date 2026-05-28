@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { appContentService } from "@/services/content/appContentService";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import { isAdminAuthenticated, adminLogout } from "@/services/adminAuth";
 import type {
   AdminBasket,
@@ -284,7 +285,7 @@ function BasketForm({ item, onSave, onClose }: { item: AdminBasket; onSave: (b: 
       <Field label="Price (AED)" value={String(form.price)} onChange={(v) => set("price", parseFloat(v) || 0)} keyboardType="numeric" />
       <Field label="Items (comma separated)" value={form.itemsStr} onChange={(v) => set("itemsStr", v)} multiline />
       <Field label="Card colour (hex)" value={form.cardColor} onChange={(v) => set("cardColor", v)} />
-      <PickerField label="Lifestyle Image Key" value={form.lifestyleImageKey ?? ""} options={LIFESTYLE_KEYS} onChange={(v) => set("lifestyleImageKey", v)} />
+      <ImageUploadField imageKey={`basket:${form.id}`} />
       <PickerField label="Country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
       <ToggleRow label="Active" value={form.active} onChange={(v) => set("active", v)} />
     </FormSheet>
@@ -369,7 +370,7 @@ function MealForm({ item, onSave, onClose }: { item: AdminMeal; onSave: (m: Admi
     <FormSheet title={item.name ? "Edit Meal" : "New Meal"} onSave={save} onClose={onClose}>
       <Field label="Name" value={form.name} onChange={(v) => set("name", v)} />
       <Field label="Description" value={form.description} onChange={(v) => set("description", v)} multiline />
-      <PickerField label="Image Key" value={form.lifestyleImageKey} options={LIFESTYLE_KEYS} onChange={(v) => set("lifestyleImageKey", v)} />
+      <ImageUploadField imageKey={`meal:${form.id}`} />
       <PickerField label="Country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
       <Field label="Prep Time" value={form.prepTime} onChange={(v) => set("prepTime", v)} placeholder="e.g. 15 min" />
       <Field label="Cook Time" value={form.cookTime} onChange={(v) => set("cookTime", v)} placeholder="e.g. 30 min" />
@@ -498,7 +499,7 @@ function HeroTab({ content, onChange }: { content: AppContentData; onChange: (d:
         <FormSheet title={`Edit Hero — ${editItem.country}`} onSave={() => save(editItem)} onClose={() => setEditItem(null)}>
           <Field label="Hero Title" value={editItem.title} onChange={(v) => setEditItem((h) => h ? { ...h, title: v } : h)} multiline />
           <Field label="Tagline / Subtitle" value={editItem.tagline} onChange={(v) => setEditItem((h) => h ? { ...h, tagline: v } : h)} multiline />
-          <PickerField label="Image Key" value={editItem.imageKey} options={["hero-uganda", "hero-kenya", "hero-ethiopia", "hero-pan-african"]} onChange={(v) => setEditItem((h) => h ? { ...h, imageKey: v } : h)} />
+          <ImageUploadField imageKey={`hero:${editItem.country}`} />
         </FormSheet>
       )}
     </View>

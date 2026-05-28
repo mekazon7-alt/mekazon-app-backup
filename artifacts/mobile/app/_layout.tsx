@@ -20,6 +20,7 @@ import { CartProvider } from "@/context/CartContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { AppContentProvider } from "@/context/AppContentContext";
+import { ImageStoreProvider } from "@/context/ImageStoreContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -64,13 +65,15 @@ export default function RootLayout() {
               <AuthProvider>
                 <LanguageProvider>
                   <LocationProvider>
-                    <AppContentProvider>
-                      <HomeCountryProvider>
-                        <CartProvider>
-                          <RootLayoutNav />
-                        </CartProvider>
-                      </HomeCountryProvider>
-                    </AppContentProvider>
+                    <ImageStoreProvider>
+                      <AppContentProvider>
+                        <HomeCountryProvider>
+                          <CartProvider>
+                            <RootLayoutNav />
+                          </CartProvider>
+                        </HomeCountryProvider>
+                      </AppContentProvider>
+                    </ImageStoreProvider>
                   </LocationProvider>
                 </LanguageProvider>
               </AuthProvider>

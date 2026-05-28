@@ -137,7 +137,7 @@ export default function AdminContentScreen() {
 
   const persistContent = async (updated: AppContentData) => {
     setContent(updated);
-    await appContentService.setContent(updated);
+    await appContentService.saveContent(updated);
   };
 
   if (!authed) {

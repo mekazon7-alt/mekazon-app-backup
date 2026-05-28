@@ -21,6 +21,7 @@ async function save(content: AppContentData): Promise<void> {
 
 export const appContentService = {
   getContent: load,
+  saveContent: save,
 
   async resetContent(): Promise<void> {
     await AsyncStorage.removeItem(STORAGE_KEY);

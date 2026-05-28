@@ -16,6 +16,7 @@ import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
+import { CART_CONTENT } from "@/constants/appContent";
 
 export default function CartScreen() {
   const colors = useColors();
@@ -134,14 +135,6 @@ export default function CartScreen() {
                   AED {totalPrice.toFixed(2)}
                 </Text>
               </View>
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-                  {t("cartDelivery")}
-                </Text>
-                <Text style={[styles.summaryValue, { color: "#4E7234" }]}>
-                  {t("cartFreeDelivery")}
-                </Text>
-              </View>
               <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
               <View style={styles.summaryRow}>
                 <Text style={[styles.totalLabel, { color: colors.foreground }]}>{t("cartTotal")}</Text>
@@ -149,6 +142,9 @@ export default function CartScreen() {
                   AED {totalPrice.toFixed(2)}
                 </Text>
               </View>
+              <Text style={[styles.deliveryNote, { color: colors.mutedForeground }]}>
+                {CART_CONTENT.deliveryNote}
+              </Text>
             </View>
 
             <Pressable
@@ -277,5 +273,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: "center",
     paddingBottom: 4,
+  },
+  deliveryNote: {
+    fontSize: 11,
+    textAlign: "center",
+    marginTop: 2,
   },
 });

@@ -1,0 +1,36 @@
+Create an editable appContent.ts file for non-Shopify content:
+- welcome screen images
+- hero banners
+- meal inspiration images
+- basket names
+- emotional copy
+- trust messages
+- country-specific homepage sections and anythign that you haev added on the app that are not in shopiy so the admin or hte perosn who is workign on can change them as it is necessory
+Make sure that when some one changes the country , actually i am not sure why it is at the top as country changes necosue whatw e talked about the login flow was , welcome page , then tehy choose hte country and language ( here pelase refer what we have decided on when we build the flow )
+Means if some oen wants to go back and change the country will the language be the smae , example i am browsin in ethiopia collection then as you didn on the to p i will change the country then will b es till browsing  it in Amharic , how will i change the language then? Here think of hte best easy from user experience 
+
+Make sure all the buttons are working i see when see lal i sclicked nothing ahppes , and images that are placed in horizontal ther eis no topion to scroll to see what is next it looks static 
+Make sure they can also store their order , means next tiem they loogin it will have a reorder option with their previous order so it will be easier to chekc out 
+So loginoption should be there or continue as a guest 
+When cystoermn add item to cart it will automatically say free delivery which is wrong becoseu when they cleack check out it wills how the delivery charge option. So you should remove htta so customers wont get confused as the picture attached 
+Most of htem as experience until now they ise their phoen to make an order they dont use an email , so you cna use that information ot decide on the login 
+Shopify should control products, prices, inventory, cart, checkout, and orders.
+appContent.ts should control emotional app content that does not exist on Shopify.Now that Shopify add-to-cart, checkout, and Shopify Orders are working, create a production readiness checklist inside the project.
+Also create appContent.ts so we can edit non-Shopify images, banners, meal inspiration, trust copy, and country-specific emotional sections without changing Shopify products.
+Then audit the app for App Store and Google Play readiness:
+- icons
+- splash screen
+- privacy policy link
+- support link
+- app name
+- package/bundle identifier
+- permissions
+- data collection
+- error states
+- loading states
+- checkout flow
+- Arabic RTL
+- production build readiness
+
+Please llok in to anything else that is missing for this to be a rela ppa 
+

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 
 import { BasketCard } from "@/components/BasketCard";
 import { ProductCard } from "@/components/ProductCard";
@@ -25,6 +26,13 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
+import { LANGUAGE_META, COUNTRY_SUGGESTED_LANGUAGE, type SupportedLanguage } from "@/lib/i18n";
+import {
+  HERO_COPY,
+  HOME_SECTIONS,
+  TRUST_ITEMS,
+  MEAL_INSPIRATION_LABELS,
+} from "@/constants/appContent";
 
 const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   "hero-uganda": require("@/assets/images/hero-uganda.png"),
@@ -57,7 +65,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { homeCountry, setHomeCountry, experience, shopifyProducts, productsLoading } = useHomeCountry();
   const { totalItems } = useCart();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { deliveryLabel, selectedEmirate } = useLocation();
   const [locationSheetVisible, setLocationSheetVisible] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -143,18 +151,28 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Text style={[styles.heroTitle, { color: colors.foreground }]}>
-              Your home basket{"\n"}is ready.
+              {HERO_COPY[homeCountry ?? "all"]?.title ?? HERO_COPY.all.title}
             </Text>
             <Text style={[styles.heroTagline, { color: colors.mutedForeground }]}>
-              Food that feels like home.
+              {HERO_COPY[homeCountry ?? "all"]?.tagline ?? HERO_COPY.all.tagline}
             </Text>
             <View style={styles.heroButtons}>
-              <Pressable style={[styles.heroBtnPrimary, { backgroundColor: colors.primary }]}>
+              <Pressable
+                style={[styles.heroBtnPrimary, { backgroundColor: colors.primary }]}
+                onPress={() => router.push("/(tabs)/orders")}
+              >
                 <Ionicons name="refresh" size={14} color="#FFFFFF" />
-                <Text style={styles.heroBtnPrimaryText}>Buy Again</Text>
+                <Text style={styles.heroBtnPrimaryText}>
+                  {HERO_COPY[homeCountry ?? "all"]?.buyAgainLabel ?? "Buy Again"}
+                </Text>
               </Pressable>
-              <Pressable style={[styles.heroBtnSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.heroBtnSecondaryText, { color: colors.foreground }]}>Explore</Text>
+              <Pressable
+                style={[styles.heroBtnSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push("/(tabs)/search")}
+              >
+                <Text style={[styles.heroBtnSecondaryText, { color: colors.foreground }]}>
+                  {HERO_COPY[homeCountry ?? "all"]?.exploreLabel ?? "Explore"}
+                </Text>
                 <Ionicons name="arrow-forward" size={13} color={colors.foreground} />
               </Pressable>
             </View>
@@ -212,9 +230,9 @@ export default function HomeScreen() {
         {/* My Baskets */}
         <View style={styles.section}>
           <SectionHeader
-            title="My Baskets"
-            subtitle={`Curated for ${experience.name}`}
-            onSeeAll={() => {}}
+            title={HOME_SECTIONS.baskets.title}
+            subtitle={HOME_SECTIONS.baskets.subtitle(experience.name)}
+            onSeeAll={() => router.push("/(tabs)/search")}
           />
           <ScrollView
             horizontal
@@ -230,9 +248,9 @@ export default function HomeScreen() {
         {/* Cravings Right Now */}
         <View style={styles.section}>
           <SectionHeader
-            title="Cravings Right Now"
-            subtitle="Popular in your community today"
-            onSeeAll={() => {}}
+            title={HOME_SECTIONS.cravings.title}
+            subtitle={HOME_SECTIONS.cravings.subtitle}
+            onSeeAll={() => router.push("/(tabs)/search")}
           />
           {productsLoading ? (
             <View style={styles.productsLoader}>
@@ -254,7 +272,7 @@ export default function HomeScreen() {
         {/* Meal Inspiration */}
         {lifestyleKeys.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title="Meal Inspiration" subtitle="Dishes to cook this week" />
+            <SectionHeader title={HOME_SECTIONS.mealInspiration.title} subtitle={HOME_SECTIONS.mealInspiration.subtitle} />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -268,7 +286,9 @@ export default function HomeScreen() {
                     style={StyleSheet.absoluteFill}
                   />
                   <View style={styles.inspirationTextWrap}>
-                    <Text style={styles.inspirationLabel}>{formatLifestyleKey(key)}</Text>
+                    <Text style={styles.inspirationLabel}>
+                    {MEAL_INSPIRATION_LABELS[key] ?? formatLifestyleKey(key)}
+                  </Text>
                   </View>
                 </Pressable>
               ))}
@@ -279,9 +299,9 @@ export default function HomeScreen() {
         {/* More Products */}
         <View style={styles.section}>
           <SectionHeader
-            title={`Made for ${experience.name}`}
-            subtitle="Authentic, sourced just for you"
-            onSeeAll={() => {}}
+            title={HOME_SECTIONS.madeFor.title(experience.name)}
+            subtitle={HOME_SECTIONS.madeFor.subtitle}
+            onSeeAll={() => router.push("/(tabs)/search")}
           />
           <ScrollView
             horizontal
@@ -296,15 +316,9 @@ export default function HomeScreen() {
 
         {/* Trust Bar */}
         <View style={[styles.trustBar, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          {(
-            [
-              { icon: "shield-checkmark-outline", label: "Quality" },
-              { icon: "flash-outline", label: "Fast Delivery" },
-              { icon: "people-outline", label: "Trusted by Thousands" },
-            ] as const
-          ).map((item) => (
+          {TRUST_ITEMS.map((item) => (
             <View key={item.label} style={styles.trustItem}>
-              <Ionicons name={item.icon} size={18} color={colors.primary} />
+              <Ionicons name={item.iconName as any} size={18} color={colors.primary} />
               <Text style={[styles.trustText, { color: colors.mutedForeground }]}>{item.label}</Text>
             </View>
           ))}
@@ -316,49 +330,90 @@ export default function HomeScreen() {
         onClose={() => setLocationSheetVisible(false)}
       />
 
-      {/* Country Picker Modal */}
+      {/* Combined Country + Language Picker */}
       <Modal visible={showCountryPicker} animationType="slide" transparent>
         <Pressable style={styles.modalOverlay} onPress={() => setShowCountryPicker(false)} />
         <Animated.View
           entering={FadeInDown.duration(300)}
           style={[styles.modalSheet, { backgroundColor: colors.card }]}
         >
-          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-          <Text style={[styles.modalTitle, { color: colors.foreground }]}>Change Your Home</Text>
-          {ONBOARDING_OPTIONS.map((option) => {
-            const isSelected = homeCountry === option.id;
-            return (
-              <Pressable
-                key={option.id}
-                style={[
-                  styles.modalOption,
-                  {
-                    backgroundColor: isSelected ? colors.secondary : "transparent",
-                    borderColor: isSelected ? colors.primary : colors.border,
-                  },
-                ]}
-                onPress={async () => {
-                  await setHomeCountry(option.id as HomeCountry);
-                  setShowCountryPicker(false);
-                }}
-              >
-                <View style={styles.optionFlagBar}>
-                  {option.flagColors.map((c, i) => (
-                    <View key={i} style={[styles.optionFlagStripe, { backgroundColor: c }]} />
-                  ))}
-                </View>
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionName, { color: isSelected ? colors.primary : colors.foreground }]}>
-                    {option.name}
-                  </Text>
-                  <Text style={[styles.optionSub, { color: colors.mutedForeground }]} numberOfLines={1}>
-                    {option.subtitle}
-                  </Text>
-                </View>
-                {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
-              </Pressable>
-            );
-          })}
+          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Your Experience</Text>
+
+            {/* Country section */}
+            <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>YOUR HOME COUNTRY</Text>
+            {ONBOARDING_OPTIONS.map((option) => {
+              const isSelected = homeCountry === option.id;
+              return (
+                <Pressable
+                  key={option.id}
+                  style={[
+                    styles.modalOption,
+                    {
+                      backgroundColor: isSelected ? colors.secondary : "transparent",
+                      borderColor: isSelected ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={async () => {
+                    await setHomeCountry(option.id as HomeCountry);
+                    const suggested = COUNTRY_SUGGESTED_LANGUAGE[option.id];
+                    if (suggested) await setLanguage(suggested as SupportedLanguage);
+                    setShowCountryPicker(false);
+                  }}
+                >
+                  <View style={styles.optionFlagBar}>
+                    {option.flagColors.map((c, i) => (
+                      <View key={i} style={[styles.optionFlagStripe, { backgroundColor: c }]} />
+                    ))}
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={[styles.optionName, { color: isSelected ? colors.primary : colors.foreground }]}>
+                      {option.name}
+                    </Text>
+                    <Text style={[styles.optionSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                      {option.subtitle}
+                    </Text>
+                  </View>
+                  {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                </Pressable>
+              );
+            })}
+
+            {/* Language section */}
+            <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
+            <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>LANGUAGE</Text>
+            {(Object.keys(LANGUAGE_META) as SupportedLanguage[]).map((lang) => {
+              const meta = LANGUAGE_META[lang];
+              const isSelected = language === lang;
+              return (
+                <Pressable
+                  key={lang}
+                  style={[
+                    styles.modalOption,
+                    {
+                      backgroundColor: isSelected ? colors.secondary : "transparent",
+                      borderColor: isSelected ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={async () => {
+                    await setLanguage(lang);
+                    setShowCountryPicker(false);
+                  }}
+                >
+                  <View style={styles.optionContent}>
+                    <Text style={[styles.optionName, { color: isSelected ? colors.primary : colors.foreground }]}>
+                      {meta.nativeLabel}
+                    </Text>
+                    <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>
+                      {meta.label}{meta.rtl ? " — RTL" : ""}
+                    </Text>
+                  </View>
+                  {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </Animated.View>
       </Modal>
     </View>
@@ -592,6 +647,14 @@ const styles = StyleSheet.create({
   trustItem: { alignItems: "center", gap: 6 },
   trustText: { fontSize: 11, fontWeight: "600" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  modalSectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  modalDivider: { height: 1, marginVertical: 18 },
   modalSheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

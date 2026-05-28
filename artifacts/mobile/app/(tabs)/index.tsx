@@ -3,6 +3,8 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -22,7 +24,7 @@ import { useHomeCountry } from "@/context/HomeCountryContext";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
-import { ActivityIndicator } from "react-native";
+import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
 
 const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   "hero-uganda": require("@/assets/images/hero-uganda.png"),
@@ -53,11 +55,12 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { experience, shopifyProducts, productsLoading } = useHomeCountry();
+  const { homeCountry, setHomeCountry, experience, shopifyProducts, productsLoading } = useHomeCountry();
   const { totalItems } = useCart();
   const { t } = useLanguage();
   const { deliveryLabel, selectedEmirate } = useLocation();
   const [locationSheetVisible, setLocationSheetVisible] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -82,16 +85,30 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={[styles.header, { paddingTop: topPad + 12 }]}>
           <View style={styles.headerLeft}>
-            <Pressable
-              style={[styles.locationPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-              onPress={() => setLocationSheetVisible(true)}
-            >
-              <Ionicons name="location" size={12} color={colors.primary} />
-              <Text style={[styles.locationText, { color: colors.foreground }]}>
-                {selectedEmirate ? selectedEmirate.name : t("chooseLocation")}
-              </Text>
-              <Ionicons name="chevron-down" size={11} color={colors.mutedForeground} />
-            </Pressable>
+            <View style={styles.pillRow}>
+              <Pressable
+                style={[styles.locationPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                onPress={() => setLocationSheetVisible(true)}
+              >
+                <Ionicons name="location" size={12} color={colors.primary} />
+                <Text style={[styles.locationText, { color: colors.foreground }]}>
+                  {selectedEmirate ? selectedEmirate.name : t("chooseLocation")}
+                </Text>
+                <Ionicons name="chevron-down" size={11} color={colors.mutedForeground} />
+              </Pressable>
+              <Pressable
+                style={[styles.countryPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                onPress={() => setShowCountryPicker(true)}
+              >
+                <View style={styles.countryFlagBar}>
+                  {experience.flagColors.map((c, i) => (
+                    <View key={i} style={[styles.countryFlagStripe, { backgroundColor: c }]} />
+                  ))}
+                </View>
+                <Text style={[styles.locationText, { color: colors.foreground }]}>{experience.name}</Text>
+                <Ionicons name="chevron-down" size={11} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
             <Text style={[styles.greeting, { color: colors.foreground }]}>{timeGreeting}</Text>
           </View>
           <View style={styles.headerRight}>
@@ -298,6 +315,52 @@ export default function HomeScreen() {
         visible={locationSheetVisible}
         onClose={() => setLocationSheetVisible(false)}
       />
+
+      {/* Country Picker Modal */}
+      <Modal visible={showCountryPicker} animationType="slide" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowCountryPicker(false)} />
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[styles.modalSheet, { backgroundColor: colors.card }]}
+        >
+          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>Change Your Home</Text>
+          {ONBOARDING_OPTIONS.map((option) => {
+            const isSelected = homeCountry === option.id;
+            return (
+              <Pressable
+                key={option.id}
+                style={[
+                  styles.modalOption,
+                  {
+                    backgroundColor: isSelected ? colors.secondary : "transparent",
+                    borderColor: isSelected ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={async () => {
+                  await setHomeCountry(option.id as HomeCountry);
+                  setShowCountryPicker(false);
+                }}
+              >
+                <View style={styles.optionFlagBar}>
+                  {option.flagColors.map((c, i) => (
+                    <View key={i} style={[styles.optionFlagStripe, { backgroundColor: c }]} />
+                  ))}
+                </View>
+                <View style={styles.optionContent}>
+                  <Text style={[styles.optionName, { color: isSelected ? colors.primary : colors.foreground }]}>
+                    {option.name}
+                  </Text>
+                  <Text style={[styles.optionSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    {option.subtitle}
+                  </Text>
+                </View>
+                {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+              </Pressable>
+            );
+          })}
+        </Animated.View>
+      </Modal>
     </View>
   );
 }
@@ -320,6 +383,19 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerLeft: { gap: 6 },
+  pillRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  countryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignSelf: "flex-start",
+  },
+  countryFlagBar: { width: 12, height: 12, borderRadius: 2, overflow: "hidden", flexDirection: "row" },
+  countryFlagStripe: { flex: 1 },
   locationPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -515,4 +591,29 @@ const styles = StyleSheet.create({
   },
   trustItem: { alignItems: "center", gap: 6 },
   trustText: { fontSize: 11, fontWeight: "600" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingTop: 12,
+    gap: 10,
+  },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8, letterSpacing: -0.3 },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingVertical: 12,
+    paddingRight: 16,
+    gap: 12,
+    overflow: "hidden",
+  },
+  optionFlagBar: { width: 5, height: 52, flexDirection: "column" },
+  optionFlagStripe: { flex: 1 },
+  optionContent: { flex: 1, paddingLeft: 10 },
+  optionName: { fontSize: 15, fontWeight: "700" },
+  optionSub: { fontSize: 12, marginTop: 2 },
 });

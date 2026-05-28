@@ -14,6 +14,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthProvider } from "@/context/AuthContext";
 import { HomeCountryProvider } from "@/context/HomeCountryContext";
 import { CartProvider } from "@/context/CartContext";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -31,6 +32,8 @@ function RootLayoutNav() {
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="verify-otp" options={{ headerShown: false }} />
       <Stack.Screen name="admin-content" options={{ headerShown: false }} />
     </Stack>
   );
@@ -58,17 +61,19 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <LanguageProvider>
-                <LocationProvider>
-                  <AppContentProvider>
-                  <HomeCountryProvider>
-                    <CartProvider>
-                      <RootLayoutNav />
-                    </CartProvider>
-                  </HomeCountryProvider>
-                </AppContentProvider>
-                </LocationProvider>
-              </LanguageProvider>
+              <AuthProvider>
+                <LanguageProvider>
+                  <LocationProvider>
+                    <AppContentProvider>
+                      <HomeCountryProvider>
+                        <CartProvider>
+                          <RootLayoutNav />
+                        </CartProvider>
+                      </HomeCountryProvider>
+                    </AppContentProvider>
+                  </LocationProvider>
+                </LanguageProvider>
+              </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

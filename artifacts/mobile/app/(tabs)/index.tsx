@@ -112,9 +112,18 @@ export default function HomeScreen() {
   if (!experience) return null;
 
   const heroImage = HERO_IMAGES[experience.heroImageKey];
-  const hour = new Date().getHours();
+  // Use UAE (Asia/Dubai, UTC+4) time for the greeting, regardless of device timezone
+  const uaeHour = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Dubai" })
+  ).getHours();
   const timeGreeting =
-    hour < 12 ? t("goodMorning") : hour < 17 ? t("goodAfternoon") : t("goodEvening");
+    uaeHour >= 5 && uaeHour < 12
+      ? t("goodMorning")
+      : uaeHour >= 12 && uaeHour < 17
+        ? t("goodAfternoon")
+        : uaeHour >= 17 && uaeHour < 22
+          ? t("goodEvening")
+          : t("goodNight");
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>

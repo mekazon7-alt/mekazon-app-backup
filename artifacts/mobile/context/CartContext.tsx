@@ -4,11 +4,20 @@ import React, { createContext, useCallback, useContext, useState } from "react";
 
 import type { Product } from "@/constants/personalization";
 import { getCheckoutUrl } from "@/services/shopify/cart";
+import { saveOrder, generateOrderId, type LocalOrder } from "@/services/orderHistoryService";
 
 const CART_ID_KEY = "@mekazon_cart_id";
 
 interface CartItem extends Product {
   quantity: number;
+}
+
+interface CheckoutExtras {
+  vatAmount?: number;
+  deliveryFee?: number | null;
+  estimatedTotal?: number;
+  emirate?: string;
+  country?: string;
 }
 
 interface CartContextType {
@@ -20,7 +29,7 @@ interface CartContextType {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  shopifyCheckout: () => Promise<void>;
+  shopifyCheckout: (extras?: CheckoutExtras) => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType>({
@@ -71,16 +80,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => setItems([]);
 
   /**
-   * Opens Shopify checkout for the current cart items.
+   * Opens Shopify checkout for the current cart items and records a local
+   * order intent in the app's order history.
    *
-   * When EXPO_PUBLIC_SHOPIFY_STORE_DOMAIN + EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN
-   * are set, this creates a real Shopify cart and opens the hosted checkout URL.
-   * Orders will appear in Shopify Admin > Orders automatically.
+   * Pass `extras` (computed in cart.tsx) to include VAT, delivery fee and
+   * estimated total in the order record.
    *
-   * Payment options (Cash on Delivery, online payment) are configured in
-   * Shopify Admin > Settings > Payments and appear automatically at checkout.
+   * Orders will appear in Shopify Admin > Orders automatically once the
+   * customer completes the Shopify checkout flow.
    */
-  const shopifyCheckout = useCallback(async () => {
+  const shopifyCheckout = useCallback(async (extras?: CheckoutExtras) => {
     if (items.length === 0) return;
     setCheckoutLoading(true);
     try {
@@ -95,6 +104,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         lineItems.length > 0 ? lineItems : []
       );
 
+      // Save local order history record
+      const vat = extras?.vatAmount ?? 0;
+      const delivery = extras?.deliveryFee ?? null;
+      const estimated = extras?.estimatedTotal ?? totalPrice + vat + (delivery ?? 0);
+
+      const order: LocalOrder = {
+        id: generateOrderId(),
+        date: new Date().toISOString(),
+        items: items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
+        subtotal: totalPrice,
+        vatAmount: vat,
+        deliveryFee: delivery,
+        estimatedTotal: estimated,
+        checkoutUrl,
+        emirate: extras?.emirate,
+        country: extras?.country,
+        status: "sent_to_shopify",
+      };
+      await saveOrder(order);
+
       await AsyncStorage.removeItem(CART_ID_KEY);
       await Linking.openURL(checkoutUrl);
     } catch (err) {
@@ -103,7 +132,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setCheckoutLoading(false);
     }
-  }, [items]);
+  }, [items, totalPrice]);
 
   return (
     <CartContext.Provider

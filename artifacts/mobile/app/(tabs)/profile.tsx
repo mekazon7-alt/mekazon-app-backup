@@ -17,6 +17,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
@@ -24,6 +25,11 @@ import { LocationBottomSheet } from "@/components/LocationBottomSheet";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
 import { LANGUAGE_META, type SupportedLanguage } from "@/lib/i18n";
 import { checkAdminPassword, setAdminAuthenticated, isAdminAuthenticated, adminLogout } from "@/services/adminAuth";
+import {
+  sendLocalNotification,
+  syncNotificationSchedules,
+  requestNotificationPermission,
+} from "@/services/notificationService";
 
 const APP_VERSION = "1.0";
 const VERSION_TAPS_REQUIRED = 5;
@@ -34,16 +40,43 @@ export default function ProfileScreen() {
   const { t, language, setLanguage } = useLanguage();
   const { homeCountry, experience, setHomeCountry } = useHomeCountry();
   const { selectedEmirate } = useLocation();
+  const { session, isLoggedIn, logout } = useAuth();
 
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [showLocationSheet, setShowLocationSheet] = useState(false);
   const [notifs, setNotifs] = useState({
-    weeklyBasket: true,
-    freshStock: false,
-    newArrivals: true,
-    reorder: false,
+    weeklyBasket: session?.user.notificationPreferences.weeklyBasket ?? true,
+    freshStock: session?.user.notificationPreferences.freshStock ?? false,
+    newArrivals: session?.user.notificationPreferences.newArrivals ?? true,
+    reorder: session?.user.notificationPreferences.reorder ?? false,
   });
+
+  const handleNotifChange = async (key: keyof typeof notifs, value: boolean) => {
+    const next = { ...notifs, [key]: value };
+    setNotifs(next);
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      await syncNotificationSchedules({
+        weeklyBasket: next.weeklyBasket,
+        reorder: next.reorder,
+        freshStock: next.freshStock,
+      });
+    }
+  };
+
+  const handleTestNotification = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await sendLocalNotification(
+      "Mekazon",
+      "Your home basket is ready. Fresh arrivals for your community — shop now."
+    );
+  };
+
+  const handleLogout = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await logout();
+  };
 
   // Hidden admin access
   const [versionTapCount, setVersionTapCount] = useState(0);
@@ -108,13 +141,37 @@ export default function ProfileScreen() {
 
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <View style={[styles.avatar, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="person" size={36} color={colors.mutedForeground} />
+          <View style={[styles.avatar, { backgroundColor: isLoggedIn ? colors.primary + "22" : colors.secondary }]}>
+            {isLoggedIn ? (
+              <Text style={[styles.avatarInitial, { color: colors.primary }]}>
+                {session!.user.name.charAt(0).toUpperCase()}
+              </Text>
+            ) : (
+              <Ionicons name="person" size={36} color={colors.mutedForeground} />
+            )}
           </View>
-          <Text style={[styles.guestName, { color: colors.foreground }]}>{t("profileGuest")}</Text>
-          <Pressable style={[styles.signInBtn, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.signInText, { color: colors.primaryForeground }]}>{t("profileSignIn")}</Text>
-          </Pressable>
+
+          {isLoggedIn ? (
+            <>
+              <Text style={[styles.guestName, { color: colors.foreground }]}>{session!.user.name}</Text>
+              <Text style={[styles.userPhone, { color: colors.mutedForeground }]}>{session!.user.phone}</Text>
+              <Pressable style={[styles.logoutBtn, { borderColor: colors.border }]} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={15} color={colors.mutedForeground} />
+                <Text style={[styles.logoutText, { color: colors.mutedForeground }]}>{t("profileLogout")}</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.guestName, { color: colors.foreground }]}>{t("profileGuest")}</Text>
+              <Pressable
+                style={[styles.signInBtn, { backgroundColor: colors.primary }]}
+                onPress={() => router.push("/login")}
+              >
+                <Ionicons name="phone-portrait-outline" size={15} color="#FFFFFF" />
+                <Text style={[styles.signInText, { color: "#FFFFFF" }]}>{t("profileSignIn")}</Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         {/* Your Home */}
@@ -207,12 +264,19 @@ export default function ProfileScreen() {
               <Text style={[styles.notifLabel, { color: colors.foreground }]}>{item.label}</Text>
               <Switch
                 value={notifs[item.key]}
-                onValueChange={(v) => setNotifs((prev) => ({ ...prev, [item.key]: v }))}
+                onValueChange={(v) => handleNotifChange(item.key, v)}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor={"#FFFFFF"}
               />
             </View>
           ))}
+          <Pressable
+            style={[styles.testNotifBtn, { borderColor: colors.border }]}
+            onPress={handleTestNotification}
+          >
+            <Ionicons name="notifications-outline" size={16} color={colors.primary} />
+            <Text style={[styles.testNotifText, { color: colors.primary }]}>{t("notifTestBtn")}</Text>
+          </Pressable>
         </View>
 
         {/* Menu Items */}
@@ -446,9 +510,33 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: "800", letterSpacing: -0.6 },
   avatarSection: { alignItems: "center", paddingVertical: 20, gap: 10 },
   avatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+  avatarInitial: { fontSize: 30, fontWeight: "800" },
   guestName: { fontSize: 18, fontWeight: "700" },
-  signInBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 4 },
+  userPhone: { fontSize: 14, marginTop: -4 },
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  logoutText: { fontSize: 13, fontWeight: "600" },
+  signInBtn: { flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 22, paddingVertical: 12, borderRadius: 14, marginTop: 4 },
   signInText: { fontSize: 14, fontWeight: "700" },
+  testNotifBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 13,
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  testNotifText: { fontSize: 14, fontWeight: "600" },
   card: { marginHorizontal: 22, marginBottom: 14, borderRadius: 18, borderWidth: 1, padding: 18 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   cardTitle: { fontSize: 15, fontWeight: "700" },

@@ -2,3 +2,6 @@
 - [Mekazon image philosophy](mekazon-images.md) — two distinct image types: real product packaging (trust) vs bright daylight lifestyle (craving/emotion)
 - [Mekazon Shopify architecture](mekazon-shopify-arch.md) — collection-per-country pattern; client auto-switches mock→real via env vars
 - [Mekazon i18n + Location architecture](mekazon-i18n-location.md) — 4-lang i18n with RTL, UAE emirate bottom sheet, 2-step onboarding flow, AsyncStorage keys
+- [Auth + OTP system](auth-otp.md) — Phone login with mock OTP (123456); session in AsyncStorage; structured for Twilio/Firebase/Supabase swap; AuthProvider wraps whole tree in _layout.tsx
+- [Order history architecture](order-history.md) — Local-only (AsyncStorage), labeled "Orders started from this app", never "Order confirmed"; cart.tsx passes VAT+delivery to CartContext.shopifyCheckout(extras)
+- [Notification service pattern](notification-service.md) — expo-notifications behind Platform.OS guard; web is graceful no-op; real push requires EAS build + APNs/FCM

@@ -55,7 +55,13 @@ export default function CartScreen() {
 
   const handleCheckout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    shopifyCheckout();
+    shopifyCheckout({
+      vatAmount,
+      deliveryFee,
+      estimatedTotal,
+      emirate: selectedEmirate?.name,
+      country: homeCountry ?? undefined,
+    });
   };
 
   return (

@@ -1,0 +1,174 @@
+Next production layer: customer account, saved preferences, notifications, and UAE-time greeting.
+
+1. CUSTOMER LOGIN / ACCOUNT
+
+Add a customer login system for the app.
+
+Preferred login:
+- phone number login with OTP
+- UAE phone number support
+- international phone support later
+
+For MVP:
+- create UI screens for phone login:
+  - enter phone number
+  - enter OTP
+  - verify
+  - save user profile locally
+- use mock OTP for now: 123456
+- structure the code so later we can connect Twilio, Firebase Auth, Supabase Auth, or another OTP provider.
+
+Do not rely only on Shopify customer login for now because Shopify native customer accounts may not support the exact phone OTP flow we want.
+
+Create:
+- AuthContext
+- LoginScreen
+- VerifyOtpScreen
+- UserProfile model
+- saved user session with AsyncStorage
+
+User profile should store:
+- phone number
+- name
+- email optional
+- preferred country/home
+- preferred language
+- preferred emirate
+- saved address
+- notification preferences
+
+2. SAVED CUSTOMER EXPERIENCE
+
+After login, the customer should not need to choose country, language, or location every time.
+
+Persist:
+- selected home/country
+- selected language
+- selected emirate
+- saved address
+- cart if possible
+- last viewed category
+- notification settings
+
+If logged in:
+- show customer name if available
+- remember location automatically
+- allow changing manually from profile/header
+
+3. ORDER HISTORY
+
+Create an Order History screen.
+
+MVP:
+- after checkout starts, save local order intent/history with:
+  - date
+  - products
+  - subtotal
+  - estimated delivery
+  - estimated total
+  - Shopify checkout URL
+  - status: sent to Shopify checkout
+
+Future:
+- connect to Shopify Customer Account API or backend order lookup by customer phone/email.
+
+Important:
+Do not claim complete Shopify order-history sync unless it is actually implemented.
+For now, label it clearly as:
+"Recent app orders"
+or
+"Orders started from this app"
+
+If Shopify order lookup by customer phone/email is possible later, prepare architecture for it.
+
+4. PUSH NOTIFICATIONS
+
+Add push notification architecture using Expo Notifications.
+
+Requirements:
+- request notification permission
+- get Expo push token
+- save token in user profile
+- create notification preferences:
+  - offers and deals
+  - fresh stock alerts
+  - reorder reminders
+  - country-specific arrivals
+  - order updates later
+- create test notification button in Profile/Admin:
+  "Send test local notification"
+
+Use expo-notifications for local/scheduled notification support now.
+Prepare for remote push later with a backend.
+
+Expo supports push notifications through expo-notifications and EAS production setup, but full production push needs APNs for iOS and FCM for Android during build/submission.
+
+5. SMART REMINDERS
+
+Create local scheduled reminders:
+- weekly basket reminder
+- reorder reminder
+- fresh stock reminder
+
+For MVP, allow user to turn them on/off.
+Example:
+"Remind me every Friday morning to restock my home basket."
+
+6. UAE TIME GREETING
+
+The greeting must use UAE time, not device timezone if possible.
+
+Use Asia/Dubai timezone logic.
+
+Greeting rules:
+- 05:00–11:59 = Good morning
+- 12:00–16:59 = Good afternoon
+- 17:00–21:59 = Good evening
+- 22:00–04:59 = Good night
+
+Translate greeting using the selected language:
+English:
+Good morning / Good afternoon / Good evening / Good night
+
+Arabic:
+صباح الخير / مساء الخير / مساء الخير / تصبح على خير
+
+Amharic:
+እንደምን አደሩ / እንደምን ዋሉ / እንደምን አመሹ / መልካም እረፍት
+
+Swahili:
+Habari za asubuhi / Habari za mchana / Habari za jioni / Usiku mwema
+
+7. PROFILE SCREEN UPDATE
+
+Profile should include:
+- Login / logout
+- Name
+- Phone number
+- Saved emirate
+- Saved address
+- Preferred country/home
+- Preferred language
+- Notification preferences
+- Recent app orders
+- Admin content access hidden or password protected
+- Shopify debug hidden in developer mode only
+
+8. IMPORTANT ARCHITECTURE
+
+Keep Shopify as the commerce engine:
+- products
+- inventory
+- prices
+- cart
+- checkout
+- orders
+
+App account stores:
+- preferences
+- phone login/session
+- notifications
+- local order history
+- personalization
+
+Do not break the existing Shopify cart/checkout flow.

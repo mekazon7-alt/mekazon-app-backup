@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -22,13 +23,18 @@ import { useLocation } from "@/context/LocationContext";
 import { LocationBottomSheet } from "@/components/LocationBottomSheet";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
 import { LANGUAGE_META, type SupportedLanguage } from "@/lib/i18n";
+import { checkAdminPassword, setAdminAuthenticated, isAdminAuthenticated, adminLogout } from "@/services/adminAuth";
+
+const APP_VERSION = "1.0";
+const VERSION_TAPS_REQUIRED = 5;
 
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t, language, setLanguage } = useLanguage();
   const { homeCountry, experience, setHomeCountry } = useHomeCountry();
-  const { selectedEmirate, deliveryLabel } = useLocation();
+  const { selectedEmirate } = useLocation();
+
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [showLocationSheet, setShowLocationSheet] = useState(false);
@@ -38,6 +44,13 @@ export default function ProfileScreen() {
     newArrivals: true,
     reorder: false,
   });
+
+  // Hidden admin access
+  const [versionTapCount, setVersionTapCount] = useState(0);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPw, setAdminPw] = useState("");
+  const [adminPwError, setAdminPwError] = useState(false);
+  const [adminLoggedIn, setAdminLoggedIn] = useState(isAdminAuthenticated());
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -52,6 +65,36 @@ export default function ProfileScreen() {
     Haptics.selectionAsync();
     await setLanguage(lang);
     setShowLangPicker(false);
+  };
+
+  const handleVersionTap = () => {
+    if (adminLoggedIn) return;
+    const next = versionTapCount + 1;
+    setVersionTapCount(next);
+    if (next >= VERSION_TAPS_REQUIRED) {
+      setVersionTapCount(0);
+      setAdminPw("");
+      setAdminPwError(false);
+      setShowAdminLogin(true);
+    }
+  };
+
+  const handleAdminLogin = () => {
+    if (checkAdminPassword(adminPw)) {
+      setAdminAuthenticated(true);
+      setAdminLoggedIn(true);
+      setShowAdminLogin(false);
+      setAdminPw("");
+      router.push("/admin-content");
+    } else {
+      setAdminPwError(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
+
+  const handleAdminLogout = () => {
+    adminLogout();
+    setAdminLoggedIn(false);
   };
 
   const currentOption = ONBOARDING_OPTIONS.find((o) => o.id === homeCountry);
@@ -164,9 +207,7 @@ export default function ProfileScreen() {
               <Text style={[styles.notifLabel, { color: colors.foreground }]}>{item.label}</Text>
               <Switch
                 value={notifs[item.key]}
-                onValueChange={(v) =>
-                  setNotifs((prev) => ({ ...prev, [item.key]: v }))
-                }
+                onValueChange={(v) => setNotifs((prev) => ({ ...prev, [item.key]: v }))}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor={"#FFFFFF"}
               />
@@ -196,19 +237,121 @@ export default function ProfileScreen() {
         {/* Developer Tools */}
         <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Pressable
-            style={[styles.menuRow, { borderBottomColor: "transparent" }]}
+            style={[styles.menuRow, { borderBottomColor: adminLoggedIn ? colors.border : "transparent" }]}
             onPress={() => router.push("/debug-collections")}
           >
             <Ionicons name="git-branch-outline" size={20} color={colors.mutedForeground} />
             <Text style={[styles.menuLabel, { color: colors.foreground }]}>Debug: Shopify Collections</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </Pressable>
+
+          {adminLoggedIn && (
+            <>
+              <Pressable
+                style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                onPress={() => router.push("/admin-content")}
+              >
+                <Ionicons name="settings-outline" size={20} color={colors.primary} />
+                <Text style={[styles.menuLabel, { color: colors.primary }]}>App Content Admin</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+              </Pressable>
+              <Pressable
+                style={[styles.menuRow, { borderBottomColor: "transparent" }]}
+                onPress={handleAdminLogout}
+              >
+                <Ionicons name="log-out-outline" size={20} color={colors.destructive} />
+                <Text style={[styles.menuLabel, { color: colors.destructive }]}>Logout from Admin</Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         <Text style={[styles.shopifyNote, { color: colors.mutedForeground }]}>
           Powered by Shopify. Orders, payments, and inventory managed via mekazon.com
         </Text>
+
+        {/* Hidden version — tapping 5 times opens admin login */}
+        <Pressable onPress={handleVersionTap} style={styles.versionWrap}>
+          <Text style={[styles.versionText, { color: colors.mutedForeground }]}>
+            Mekazon App v{APP_VERSION}
+          </Text>
+          {versionTapCount > 0 && versionTapCount < VERSION_TAPS_REQUIRED && (
+            <Text style={[styles.versionHint, { color: colors.mutedForeground }]}>
+              {VERSION_TAPS_REQUIRED - versionTapCount} more tap{VERSION_TAPS_REQUIRED - versionTapCount === 1 ? "" : "s"}...
+            </Text>
+          )}
+        </Pressable>
       </ScrollView>
+
+      {/* ── Admin Login Modal ─────────────────────────────────────────────── */}
+      <Modal visible={showAdminLogin} animationType="fade" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAdminLogin(false)} />
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[styles.adminLoginSheet, { backgroundColor: colors.card }]}
+        >
+          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+
+          <View style={styles.adminLoginIcon}>
+            <Ionicons name="lock-closed" size={24} color={colors.primary} />
+          </View>
+          <Text style={[styles.adminLoginTitle, { color: colors.foreground }]}>Admin Access</Text>
+          <Text style={[styles.adminLoginSub, { color: colors.mutedForeground }]}>
+            Enter the admin password to manage app content
+          </Text>
+
+          <TextInput
+            style={[
+              styles.adminLoginInput,
+              {
+                backgroundColor: colors.background,
+                borderColor: adminPwError ? colors.destructive : colors.border,
+                color: colors.foreground,
+              },
+            ]}
+            placeholder="Admin password"
+            placeholderTextColor={colors.mutedForeground}
+            secureTextEntry
+            value={adminPw}
+            onChangeText={(v) => { setAdminPw(v); setAdminPwError(false); }}
+            onSubmitEditing={handleAdminLogin}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {adminPwError && (
+            <Text style={[styles.adminPwError, { color: colors.destructive }]}>
+              Incorrect password
+            </Text>
+          )}
+
+          <Pressable
+            style={[styles.adminLoginBtn, { backgroundColor: colors.primary }]}
+            onPress={handleAdminLogin}
+          >
+            <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+            <Text style={styles.adminLoginBtnText}>Sign In</Text>
+          </Pressable>
+
+          {/* Change password placeholder */}
+          <Pressable style={[styles.changePwRow, { borderTopColor: colors.border }]} disabled>
+            <Ionicons name="key-outline" size={15} color={colors.mutedForeground} />
+            <Text style={[styles.changePwText, { color: colors.mutedForeground }]}>
+              Change password
+            </Text>
+            <Text style={[styles.changePwComingSoon, { color: colors.mutedForeground }]}>
+              coming soon
+            </Text>
+          </Pressable>
+
+          {/* Developer note */}
+          <View style={[styles.devNote, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Ionicons name="information-circle-outline" size={13} color={colors.mutedForeground} />
+            <Text style={[styles.devNoteText, { color: colors.mutedForeground }]}>
+              Dev note: This is temporary password auth. Replace with proper backend authentication before production release.
+            </Text>
+          </View>
+        </Animated.View>
+      </Modal>
 
       {/* Country Picker Modal */}
       <Modal visible={showCountryPicker} animationType="slide" transparent>
@@ -289,7 +432,6 @@ export default function ProfileScreen() {
         </Animated.View>
       </Modal>
 
-      {/* Location Bottom Sheet */}
       <LocationBottomSheet
         visible={showLocationSheet}
         onClose={() => setShowLocationSheet(false)}
@@ -307,13 +449,7 @@ const styles = StyleSheet.create({
   guestName: { fontSize: 18, fontWeight: "700" },
   signInBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 4 },
   signInText: { fontSize: 14, fontWeight: "700" },
-  card: {
-    marginHorizontal: 22,
-    marginBottom: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 18,
-  },
+  card: { marginHorizontal: 22, marginBottom: 14, borderRadius: 18, borderWidth: 1, padding: 18 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   cardTitle: { fontSize: 15, fontWeight: "700" },
   changeText: { fontSize: 14, fontWeight: "600" },
@@ -335,30 +471,74 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   notifLabel: { fontSize: 14, flex: 1 },
-  menuSection: {
-    marginHorizontal: 22,
-    marginBottom: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 18,
-  },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
+  menuSection: { marginHorizontal: 22, marginBottom: 14, borderRadius: 18, borderWidth: 1, paddingHorizontal: 18 },
+  menuRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, borderBottomWidth: 1 },
   menuLabel: { flex: 1, fontSize: 15, fontWeight: "500" },
-  shopifyNote: { fontSize: 11, textAlign: "center", paddingHorizontal: 24, paddingBottom: 20, lineHeight: 17 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
-  modalSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  shopifyNote: { fontSize: 11, textAlign: "center", paddingHorizontal: 24, paddingBottom: 8, lineHeight: 17 },
+  versionWrap: { alignItems: "center", paddingVertical: 14, paddingBottom: 4, gap: 4 },
+  versionText: { fontSize: 12, fontWeight: "500" },
+  versionHint: { fontSize: 11, opacity: 0.7 },
+  // Admin login modal
+  adminLoginSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 24,
     paddingTop: 12,
-    gap: 10,
+    gap: 12,
   },
+  adminLoginIcon: {
+    alignSelf: "center",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(78,114,52,0.12)",
+    marginTop: 8,
+  },
+  adminLoginTitle: { fontSize: 20, fontWeight: "800", textAlign: "center", letterSpacing: -0.4 },
+  adminLoginSub: { fontSize: 13, textAlign: "center", lineHeight: 19, marginBottom: 4 },
+  adminLoginInput: {
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    marginTop: 4,
+  },
+  adminPwError: { fontSize: 13, textAlign: "center", marginTop: -4 },
+  adminLoginBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 14,
+    paddingVertical: 15,
+    marginTop: 4,
+  },
+  adminLoginBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
+  changePwRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    opacity: 0.5,
+  },
+  changePwText: { flex: 1, fontSize: 14 },
+  changePwComingSoon: { fontSize: 11, fontStyle: "italic" },
+  devNote: {
+    flexDirection: "row",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "flex-start",
+  },
+  devNoteText: { flex: 1, fontSize: 11, lineHeight: 17 },
+  // Shared modals
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingTop: 12, gap: 10 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12 },
   modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8, letterSpacing: -0.3 },
   modalOption: {

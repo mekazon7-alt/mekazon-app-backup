@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -16,17 +16,37 @@ import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
+import { useHomeCountry } from "@/context/HomeCountryContext";
 import { CART_CONTENT } from "@/constants/appContent";
+import { computeDeliveryFee, computeVAT, isSameDayEligible } from "@/constants/deliveryConfig";
 
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   const { selectedEmirate } = useLocation();
+  const { homeCountry } = useHomeCountry();
   const { items, totalItems, totalPrice, updateQuantity, clearCart, checkoutLoading, shopifyCheckout } = useCart();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
+
+  const deliveryFee = useMemo(() => {
+    if (!selectedEmirate) return null;
+    return computeDeliveryFee(selectedEmirate.id, homeCountry);
+  }, [selectedEmirate, homeCountry]);
+
+  const vatAmount = useMemo(() => computeVAT(totalPrice), [totalPrice]);
+
+  const estimatedTotal = useMemo(() => {
+    if (deliveryFee === null) return totalPrice + vatAmount;
+    return totalPrice + vatAmount + deliveryFee;
+  }, [totalPrice, vatAmount, deliveryFee]);
+
+  const sameDayEligible = useMemo(() => {
+    if (!selectedEmirate) return false;
+    return isSameDayEligible(selectedEmirate.id, homeCountry);
+  }, [selectedEmirate, homeCountry]);
 
   const handleQty = (id: string, qty: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -50,14 +70,21 @@ export default function CartScreen() {
       </View>
 
       {selectedEmirate && (
-        <View style={[styles.deliveryBanner, { backgroundColor: selectedEmirate.sameDay ? "#F0F5E8" : colors.secondary, borderColor: colors.border }]}>
+        <View style={[styles.deliveryBanner, {
+          backgroundColor: sameDayEligible ? "#F0F5E8" : colors.secondary,
+          borderColor: colors.border
+        }]}>
           <Ionicons
-            name={selectedEmirate.sameDay ? "flash" : "time-outline"}
+            name={sameDayEligible ? "flash" : "time-outline"}
             size={14}
-            color={selectedEmirate.sameDay ? "#4E7234" : colors.mutedForeground}
+            color={sameDayEligible ? "#4E7234" : colors.mutedForeground}
           />
-          <Text style={[styles.deliveryBannerText, { color: selectedEmirate.sameDay ? "#4E7234" : colors.mutedForeground }]}>
-            {selectedEmirate.deliveryMessage}
+          <Text style={[styles.deliveryBannerText, {
+            color: sameDayEligible ? "#4E7234" : colors.mutedForeground
+          }]}>
+            {sameDayEligible
+              ? "Same-day delivery available — Dubai, Uganda orders"
+              : `Next-day delivery — ${selectedEmirate.name}`}
           </Text>
         </View>
       )}
@@ -77,7 +104,7 @@ export default function CartScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
               paddingHorizontal: 20,
-              paddingBottom: bottomPad + 160,
+              paddingBottom: bottomPad + 200,
               paddingTop: 8,
             }}
             ItemSeparatorComponent={() => (
@@ -126,25 +153,79 @@ export default function CartScreen() {
               },
             ]}
           >
-            <View style={styles.summaryBox}>
+            {/* Pricing breakdown */}
+            <View style={[styles.summaryBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              {/* Subtotal */}
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-                  {t("cartSubtotal")}
+                  Subtotal ({totalItems} {totalItems === 1 ? "item" : "items"})
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.foreground }]}>
                   AED {totalPrice.toFixed(2)}
                 </Text>
               </View>
-              <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+
+              {/* VAT */}
               <View style={styles.summaryRow}>
-                <Text style={[styles.totalLabel, { color: colors.foreground }]}>{t("cartTotal")}</Text>
-                <Text style={[styles.totalPrice, { color: colors.foreground }]}>
-                  AED {totalPrice.toFixed(2)}
+                <View style={styles.summaryLabelRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
+                    VAT (5%)
+                  </Text>
+                  <Text style={[styles.summaryHint, { color: colors.mutedForeground }]}>
+                    on products
+                  </Text>
+                </View>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
+                  AED {vatAmount.toFixed(2)}
                 </Text>
               </View>
-              <Text style={[styles.deliveryNote, { color: colors.mutedForeground }]}>
-                {CART_CONTENT.deliveryNote}
-              </Text>
+
+              {/* Delivery */}
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryLabelRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
+                    Est. delivery
+                  </Text>
+                  {sameDayEligible && (
+                    <View style={[styles.sameDayBadge, { backgroundColor: "#4E7234" + "22" }]}>
+                      <Text style={[styles.sameDayBadgeText, { color: "#4E7234" }]}>same-day</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
+                  {deliveryFee !== null
+                    ? `AED ${deliveryFee.toFixed(0)}`
+                    : selectedEmirate
+                      ? "..."
+                      : "Choose location"}
+                </Text>
+              </View>
+
+              <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+
+              {/* Estimated Total */}
+              <View style={styles.summaryRow}>
+                <View style={{ gap: 2 }}>
+                  <Text style={[styles.totalLabel, { color: colors.foreground }]}>
+                    Estimated total
+                  </Text>
+                  <Text style={[styles.totalHint, { color: colors.mutedForeground }]}>
+                    Final confirmed at checkout
+                  </Text>
+                </View>
+                <Text style={[styles.totalPrice, { color: colors.foreground }]}>
+                  AED {estimatedTotal.toFixed(0)}
+                </Text>
+              </View>
+
+              {!selectedEmirate && (
+                <View style={[styles.locationNudge, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "44" }]}>
+                  <Ionicons name="location-outline" size={13} color={colors.accent} />
+                  <Text style={[styles.locationNudgeText, { color: colors.accent }]}>
+                    Choose your emirate for an accurate delivery estimate
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Pressable
@@ -182,11 +263,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingBottom: 12,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    letterSpacing: -0.6,
-  },
+  title: { fontSize: 26, fontWeight: "800", letterSpacing: -0.6 },
   clearBtn: { fontSize: 14, fontWeight: "600" },
   deliveryBanner: {
     flexDirection: "row",
@@ -199,7 +276,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  deliveryBannerText: { fontSize: 13, fontWeight: "600" },
+  deliveryBannerText: { fontSize: 13, fontWeight: "600", flex: 1 },
   emptyState: {
     flex: 1,
     alignItems: "center",
@@ -216,21 +293,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 14,
   },
-  colorDot: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    flexShrink: 0,
-  },
+  colorDot: { width: 42, height: 42, borderRadius: 12, flexShrink: 0 },
   itemInfo: { flex: 1, gap: 2 },
   itemName: { fontSize: 14, fontWeight: "600" },
   itemUnit: { fontSize: 12 },
   itemPrice: { fontSize: 14, fontWeight: "700", marginTop: 4 },
-  qtyControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
+  qtyControls: { flexDirection: "row", alignItems: "center", gap: 12 },
   qtyBtn: {
     width: 32,
     height: 32,
@@ -245,21 +313,43 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 14,
     borderTopWidth: 1,
     gap: 10,
   },
-  summaryBox: { gap: 8, marginBottom: 4 },
+  summaryBox: {
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+    marginBottom: 2,
+  },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
+  summaryLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   summaryLabel: { fontSize: 13 },
+  summaryHint: { fontSize: 10, opacity: 0.7 },
   summaryValue: { fontSize: 13, fontWeight: "600" },
-  summaryDivider: { height: 1, marginVertical: 4 },
-  totalLabel: { fontSize: 15, fontWeight: "700" },
-  totalPrice: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
+  summaryDivider: { height: 1, marginVertical: 2 },
+  totalLabel: { fontSize: 14, fontWeight: "700" },
+  totalHint: { fontSize: 10 },
+  totalPrice: { fontSize: 20, fontWeight: "800", letterSpacing: -0.5 },
+  sameDayBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  sameDayBadgeText: { fontSize: 10, fontWeight: "700" },
+  locationNudge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  locationNudgeText: { fontSize: 12, fontWeight: "500", flex: 1 },
   checkoutBtn: {
     borderRadius: 16,
     paddingVertical: 17,
@@ -273,10 +363,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: "center",
     paddingBottom: 4,
-  },
-  deliveryNote: {
-    fontSize: 11,
-    textAlign: "center",
-    marginTop: 2,
   },
 });

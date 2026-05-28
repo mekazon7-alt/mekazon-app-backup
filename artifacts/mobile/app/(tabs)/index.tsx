@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
   ActivityIndicator,
@@ -15,7 +16,6 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 
 import { BasketCard } from "@/components/BasketCard";
 import { ProductCard } from "@/components/ProductCard";
@@ -26,15 +26,11 @@ import { useHomeCountry } from "@/context/HomeCountryContext";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
+import { useAppContent } from "@/context/AppContentContext";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
 import { LANGUAGE_META, COUNTRY_SUGGESTED_LANGUAGE, type SupportedLanguage } from "@/lib/i18n";
-import {
-  HERO_COPY,
-  HOME_SECTIONS,
-  TRUST_ITEMS,
-  MEAL_INSPIRATION_LABELS,
-  MEAL_RECIPES,
-} from "@/constants/appContent";
+import { HERO_COPY, HOME_SECTIONS, TRUST_ITEMS } from "@/constants/appContent";
+import type { AdminMeal } from "@/types/appContent";
 
 const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   "hero-uganda": require("@/assets/images/hero-uganda.png"),
@@ -69,13 +65,19 @@ export default function HomeScreen() {
   const { totalItems } = useCart();
   const { t, language, setLanguage } = useLanguage();
   const { deliveryLabel, selectedEmirate } = useLocation();
+  const { getBasketsForCountry, getMealsForCountry, getCategoriesForCountry } = useAppContent();
+
   const [locationSheetVisible, setLocationSheetVisible] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
+  const [selectedMeal, setSelectedMeal] = useState<AdminMeal | null>(null);
   const [showAllBaskets, setShowAllBaskets] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [basketScrollX, setBasketScrollX] = useState(0);
   const basketScrollRef = useRef<ScrollViewType>(null);
+
+  const adminBaskets = homeCountry ? getBasketsForCountry(homeCountry) : (experience?.baskets ?? []);
+  const adminMeals = homeCountry ? getMealsForCountry(homeCountry) : [];
+  const adminCategories = homeCountry ? getCategoriesForCountry(homeCountry) : (experience?.categories ?? []);
 
   const BASKET_CARD_STEP = 262;
   const scrollBaskets = useCallback((dir: "left" | "right") => {
@@ -86,13 +88,13 @@ export default function HomeScreen() {
     setBasketScrollX(next);
   }, [basketScrollX]);
 
-  const activeCat = selectedCategory || (experience?.categories[0]?.name ?? "");
+  const firstCat = adminCategories[0]?.name ?? "";
+  const activeCat = selectedCategory || firstCat;
 
   const filteredProducts = useMemo(() => {
-    if (!experience || activeCat === (experience.categories[0]?.name ?? "")) {
-      return shopifyProducts;
-    }
-    const keywords = experience.categoryKeywords?.[activeCat] ?? [];
+    if (!activeCat || activeCat === firstCat) return shopifyProducts;
+    const catObj = adminCategories.find((c) => c.name === activeCat);
+    const keywords = catObj?.keywords ?? [];
     if (keywords.length === 0) return shopifyProducts;
     const lower = keywords.map((k) => k.toLowerCase());
     return shopifyProducts.filter((p) =>
@@ -102,7 +104,7 @@ export default function HomeScreen() {
           p.description.toLowerCase().includes(kw)
       )
     );
-  }, [activeCat, shopifyProducts, experience]);
+  }, [activeCat, firstCat, shopifyProducts, adminCategories]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -113,10 +115,6 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const timeGreeting =
     hour < 12 ? t("goodMorning") : hour < 17 ? t("goodAfternoon") : t("goodEvening");
-
-  const lifestyleKeys = (["lifestyle-ugali", "lifestyle-injera", "lifestyle-matooke", "lifestyle-coffee", "lifestyle-spices"] as const).filter(
-    (k) => LIFESTYLE_IMAGES[k]
-  );
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -157,7 +155,10 @@ export default function HomeScreen() {
             <Pressable style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
               <Ionicons name="notifications-outline" size={20} color={colors.foreground} />
             </Pressable>
-            <Pressable style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Pressable
+              style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              onPress={() => router.push("/(tabs)/cart")}
+            >
               <Ionicons name="bag-outline" size={20} color={colors.foreground} />
               {totalItems > 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.accent }]}>
@@ -215,7 +216,10 @@ export default function HomeScreen() {
 
         {/* Search */}
         <View style={styles.searchRow}>
-          <Pressable style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Pressable
+            style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push("/(tabs)/search")}
+          >
             <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
             <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>
               Search products, meals, brands...
@@ -227,83 +231,87 @@ export default function HomeScreen() {
         </View>
 
         {/* Categories */}
-        <View style={styles.categoriesSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesScroll}
-          >
-            {experience.categories.map((cat) => {
-              const isActive = cat.name === activeCat;
-              return (
-                <Pressable
-                  key={cat.name}
-                  style={[
-                    styles.categoryChip,
-                    isActive
-                      ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                      : { backgroundColor: colors.card, borderColor: colors.border },
-                  ]}
-                  onPress={() => setSelectedCategory(cat.name)}
-                >
-                  <Ionicons
-                    name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
-                    size={14}
-                    color={isActive ? "#FFFFFF" : colors.primary}
-                  />
-                  <Text
+        {adminCategories.length > 0 && (
+          <View style={styles.categoriesSection}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesScroll}
+            >
+              {adminCategories.map((cat) => {
+                const isActive = cat.name === activeCat;
+                return (
+                  <Pressable
+                    key={cat.id}
                     style={[
-                      styles.categoryText,
-                      { color: isActive ? "#FFFFFF" : colors.foreground },
+                      styles.categoryChip,
+                      isActive
+                        ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                        : { backgroundColor: colors.card, borderColor: colors.border },
                     ]}
+                    onPress={() => setSelectedCategory(isActive ? "" : cat.name)}
                   >
-                    {cat.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
+                    <Ionicons
+                      name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
+                      size={14}
+                      color={isActive ? "#FFFFFF" : colors.primary}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        { color: isActive ? "#FFFFFF" : colors.foreground },
+                      ]}
+                    >
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
 
         {/* My Baskets */}
-        <View style={styles.section}>
-          <SectionHeader
-            title={HOME_SECTIONS.baskets.title}
-            subtitle={HOME_SECTIONS.baskets.subtitle(experience.name)}
-            onSeeAll={() => setShowAllBaskets(true)}
-          />
-          <View style={styles.basketScrollWrapper}>
-            <ScrollView
-              ref={basketScrollRef}
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-              onScroll={(e) => setBasketScrollX(e.nativeEvent.contentOffset.x)}
-              scrollEventThrottle={32}
-            >
-              {experience.baskets.map((basket) => (
-                <BasketCard key={basket.id} basket={basket} />
-              ))}
-            </ScrollView>
-            {basketScrollX > 10 && (
-              <Pressable
-                style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => scrollBaskets("left")}
+        {adminBaskets.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              title={HOME_SECTIONS.baskets.title}
+              subtitle={HOME_SECTIONS.baskets.subtitle(experience.name)}
+              onSeeAll={() => setShowAllBaskets(true)}
+            />
+            <View style={styles.basketScrollWrapper}>
+              <ScrollView
+                ref={basketScrollRef}
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+                onScroll={(e) => setBasketScrollX(e.nativeEvent.contentOffset.x)}
+                scrollEventThrottle={32}
               >
-                <Ionicons name="chevron-back" size={16} color={colors.foreground} />
-              </Pressable>
-            )}
-            {experience.baskets.length > 1 && (
-              <Pressable
-                style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => scrollBaskets("right")}
-              >
-                <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
-              </Pressable>
-            )}
+                {adminBaskets.map((basket) => (
+                  <BasketCard key={basket.id} basket={basket} />
+                ))}
+              </ScrollView>
+              {basketScrollX > 10 && (
+                <Pressable
+                  style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => scrollBaskets("left")}
+                >
+                  <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+                </Pressable>
+              )}
+              {adminBaskets.length > 1 && (
+                <Pressable
+                  style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => scrollBaskets("right")}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+                </Pressable>
+              )}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Cravings Right Now */}
         <View style={styles.section}>
@@ -331,37 +339,42 @@ export default function HomeScreen() {
         </View>
 
         {/* Meal Inspiration */}
-        {lifestyleKeys.length > 0 && (
+        {adminMeals.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader title={HOME_SECTIONS.mealInspiration.title} subtitle={HOME_SECTIONS.mealInspiration.subtitle} />
+            <SectionHeader
+              title={HOME_SECTIONS.mealInspiration.title}
+              subtitle={HOME_SECTIONS.mealInspiration.subtitle}
+            />
             <ScrollView
               horizontal
               nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {lifestyleKeys.map((key) => (
-                <Pressable
-                  key={key}
-                  style={styles.inspirationCard}
-                  onPress={() => setSelectedMeal(key)}
-                >
-                  <Image source={LIFESTYLE_IMAGES[key]} style={styles.inspirationImage} contentFit="cover" />
-                  <LinearGradient
-                    colors={["transparent", "rgba(20,24,16,0.72)"]}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <View style={styles.inspirationTextWrap}>
-                    <Text style={styles.inspirationLabel}>
-                      {MEAL_INSPIRATION_LABELS[key] ?? formatLifestyleKey(key)}
-                    </Text>
-                    <View style={styles.inspirationCta}>
-                      <Text style={styles.inspirationCtaText}>See recipe</Text>
-                      <Ionicons name="arrow-forward" size={10} color="rgba(255,255,255,0.9)" />
+              {adminMeals.map((meal) => {
+                const image = LIFESTYLE_IMAGES[meal.lifestyleImageKey];
+                if (!image) return null;
+                return (
+                  <Pressable
+                    key={meal.id}
+                    style={styles.inspirationCard}
+                    onPress={() => setSelectedMeal(meal)}
+                  >
+                    <Image source={image} style={styles.inspirationImage} contentFit="cover" />
+                    <LinearGradient
+                      colors={["transparent", "rgba(20,24,16,0.72)"]}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <View style={styles.inspirationTextWrap}>
+                      <Text style={styles.inspirationLabel}>{meal.name}</Text>
+                      <View style={styles.inspirationCta}>
+                        <Text style={styles.inspirationCtaText}>See recipe</Text>
+                        <Ionicons name="arrow-forward" size={10} color="rgba(255,255,255,0.9)" />
+                      </View>
                     </View>
-                  </View>
-                </Pressable>
-              ))}
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -401,7 +414,7 @@ export default function HomeScreen() {
         onClose={() => setLocationSheetVisible(false)}
       />
 
-      {/* Combined Country + Language Picker */}
+      {/* Country + Language Picker */}
       <Modal visible={showCountryPicker} animationType="slide" transparent>
         <Pressable style={styles.modalOverlay} onPress={() => setShowCountryPicker(false)} />
         <Animated.View
@@ -412,7 +425,6 @@ export default function HomeScreen() {
             <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
             <Text style={[styles.modalTitle, { color: colors.foreground }]}>Your Experience</Text>
 
-            {/* Country section */}
             <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>YOUR HOME COUNTRY</Text>
             {ONBOARDING_OPTIONS.map((option) => {
               const isSelected = homeCountry === option.id;
@@ -431,6 +443,7 @@ export default function HomeScreen() {
                     const suggested = COUNTRY_SUGGESTED_LANGUAGE[option.id];
                     if (suggested) await setLanguage(suggested as SupportedLanguage);
                     setShowCountryPicker(false);
+                    setSelectedCategory("");
                   }}
                 >
                   <View style={styles.optionFlagBar}>
@@ -451,7 +464,6 @@ export default function HomeScreen() {
               );
             })}
 
-            {/* Language section */}
             <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
             <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>LANGUAGE</Text>
             {(Object.keys(LANGUAGE_META) as SupportedLanguage[]).map((lang) => {
@@ -500,10 +512,10 @@ export default function HomeScreen() {
             {HOME_SECTIONS.baskets.title}
           </Text>
           <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>
-            {experience ? HOME_SECTIONS.baskets.subtitle(experience.name).toUpperCase() : ""}
+            {HOME_SECTIONS.baskets.subtitle(experience.name).toUpperCase()}
           </Text>
           <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 4 }}>
-            {(experience?.baskets ?? []).map((basket) => (
+            {adminBaskets.map((basket) => (
               <View key={basket.id} style={[styles.basketListItem, { borderColor: colors.border }]}>
                 <BasketCard basket={basket} />
               </View>
@@ -517,15 +529,12 @@ export default function HomeScreen() {
       <Modal visible={!!selectedMeal} animationType="slide" transparent>
         <Pressable style={styles.modalOverlay} onPress={() => setSelectedMeal(null)} />
         {selectedMeal && (() => {
-          const recipe = MEAL_RECIPES[selectedMeal];
-          const image = LIFESTYLE_IMAGES[selectedMeal];
-          if (!recipe) return null;
+          const image = LIFESTYLE_IMAGES[selectedMeal.lifestyleImageKey];
           return (
             <Animated.View
               entering={FadeInDown.duration(300)}
               style={[styles.recipeSheet, { backgroundColor: colors.background }]}
             >
-              {/* Hero image */}
               <View style={styles.recipeHeroWrap}>
                 {image && (
                   <Image source={image} style={styles.recipeHeroImage} contentFit="cover" />
@@ -541,19 +550,19 @@ export default function HomeScreen() {
                   <Ionicons name="close" size={20} color="#FFFFFF" />
                 </Pressable>
                 <View style={styles.recipeHeroContent}>
-                  <Text style={styles.recipeHeroTitle}>{recipe.name}</Text>
+                  <Text style={styles.recipeHeroTitle}>{selectedMeal.name}</Text>
                   <View style={styles.recipeMeta}>
                     <View style={styles.recipeMetaItem}>
                       <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.85)" />
-                      <Text style={styles.recipeMetaText}>{recipe.prepTime} prep</Text>
+                      <Text style={styles.recipeMetaText}>{selectedMeal.prepTime} prep</Text>
                     </View>
                     <View style={styles.recipeMetaItem}>
                       <Ionicons name="flame-outline" size={13} color="rgba(255,255,255,0.85)" />
-                      <Text style={styles.recipeMetaText}>{recipe.cookTime} cook</Text>
+                      <Text style={styles.recipeMetaText}>{selectedMeal.cookTime} cook</Text>
                     </View>
                     <View style={styles.recipeMetaItem}>
                       <Ionicons name="people-outline" size={13} color="rgba(255,255,255,0.85)" />
-                      <Text style={styles.recipeMetaText}>Serves {recipe.servings}</Text>
+                      <Text style={styles.recipeMetaText}>Serves {selectedMeal.servings}</Text>
                     </View>
                   </View>
                 </View>
@@ -565,13 +574,13 @@ export default function HomeScreen() {
                 showsVerticalScrollIndicator={false}
               >
                 <Text style={[styles.recipeDescription, { color: colors.mutedForeground }]}>
-                  {recipe.description}
+                  {selectedMeal.description}
                 </Text>
 
                 <Text style={[styles.recipeSectionTitle, { color: colors.foreground }]}>
                   Ingredients
                 </Text>
-                {recipe.ingredients.map((ing, i) => (
+                {selectedMeal.ingredients.map((ing, i) => (
                   <View key={i} style={styles.ingredientRow}>
                     <View style={[styles.ingredientDot, { backgroundColor: colors.primary }]} />
                     <Text style={[styles.ingredientText, { color: colors.foreground }]}>{ing}</Text>
@@ -581,7 +590,7 @@ export default function HomeScreen() {
                 <Text style={[styles.recipeSectionTitle, { color: colors.foreground }]}>
                   Method
                 </Text>
-                {recipe.steps.map((step, i) => (
+                {selectedMeal.steps.map((step, i) => (
                   <View key={i} style={styles.stepRow}>
                     <View style={[styles.stepNumber, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                       <Text style={[styles.stepNumberText, { color: colors.primary }]}>{i + 1}</Text>
@@ -590,10 +599,10 @@ export default function HomeScreen() {
                   </View>
                 ))}
 
-                {recipe.tip && (
+                {selectedMeal.tip && (
                   <View style={[styles.recipeTip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                     <Ionicons name="bulb-outline" size={16} color={colors.primary} />
-                    <Text style={[styles.recipeTipText, { color: colors.foreground }]}>{recipe.tip}</Text>
+                    <Text style={[styles.recipeTipText, { color: colors.foreground }]}>{selectedMeal.tip}</Text>
                   </View>
                 )}
               </ScrollView>
@@ -603,14 +612,6 @@ export default function HomeScreen() {
       </Modal>
     </View>
   );
-}
-
-function formatLifestyleKey(key: string): string {
-  return key
-    .replace("lifestyle-", "")
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 const styles = StyleSheet.create({
@@ -699,16 +700,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginBottom: 10,
   },
-  heroBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  heroBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
+  heroBadgeDot: { width: 6, height: 6, borderRadius: 3 },
+  heroBadgeText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.3 },
   heroTitle: {
     fontSize: 26,
     fontWeight: "800",
@@ -716,11 +709,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     marginBottom: 5,
   },
-  heroTagline: {
-    fontSize: 14,
-    marginBottom: 18,
-    fontWeight: "500",
-  },
+  heroTagline: { fontSize: 14, marginBottom: 18, fontWeight: "500" },
   heroButtons: { flexDirection: "row", gap: 10 },
   heroBtnPrimary: {
     flexDirection: "row",
@@ -746,10 +735,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   heroBtnSecondaryText: { fontSize: 13, fontWeight: "700" },
-  searchRow: {
-    paddingHorizontal: 22,
-    marginBottom: 20,
-  },
+  searchRow: { paddingHorizontal: 22, marginBottom: 20 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -828,33 +814,16 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 12,
   },
-  inspirationLabel: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-  },
-  inspirationCta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 4,
-  },
-  inspirationCtaText: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 11,
-    fontWeight: "600",
-  },
+  inspirationLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", letterSpacing: -0.2 },
+  inspirationCta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  inspirationCtaText: { color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: "600" },
   recipeSheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "88%",
     overflow: "hidden",
   },
-  recipeHeroWrap: {
-    height: 210,
-    position: "relative",
-  },
+  recipeHeroWrap: { height: 210, position: "relative" },
   recipeHeroImage: { width: "100%", height: "100%" },
   recipeCloseBtn: {
     position: "absolute",

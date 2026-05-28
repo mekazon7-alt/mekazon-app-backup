@@ -1,0 +1,187 @@
+The Shopify connection, add to cart, checkout, and Shopify order creation are working. Now we need to make the app manageable and production-ready.
+
+IMPORTANT:
+Shopify controls:
+- real products
+- prices
+- inventory
+- collections
+- checkout
+- payments
+- COD
+- orders
+
+But the app also has custom content that is NOT inside Shopify:
+- My Baskets
+- Meal Inspiration
+- hero images
+- homepage banners
+- emotional copy
+- category labels
+- country-specific app sections
+- recipe/details pages
+
+I need a simple admin/content management system inside the app project so I can add, edit, delete, and reorder these items without editing code every time.
+
+Build an App Content Admin system.
+
+Requirements:
+
+1. Create an admin screen hidden from normal customers:
+- route: /admin-content
+- password protected with a simple temporary admin password
+- later this can become proper login
+
+2. Admin should allow me to manage:
+A) Baskets
+- add basket
+- edit basket
+- delete basket
+- reorder baskets
+- assign country: Uganda, Kenya, Ethiopia, Other, All
+- basket title
+- subtitle
+- image URL
+- price
+- linked Shopify product handles or variant IDs
+- button text
+- active/inactive
+
+B) Meal Inspiration
+- add meal
+- edit meal
+- delete meal
+- reorder meals
+- assign country
+- title
+- image URL
+- short description
+- ingredients
+- method steps
+- prep time
+- cook time
+- servings
+- linked Shopify products needed for the recipe
+- active/inactive
+
+C) Homepage Hero
+- edit hero image
+- edit hero text
+- edit CTA buttons
+- assign per country
+
+D) App Categories
+Current app category names are good:
+- Fresh
+- Staples
+- Sauces
+- Spices
+
+But they must become clickable and editable.
+
+Each app category should map to one or more Shopify collection handles.
+
+When user taps Fresh, show products from the mapped Shopify collection.
+When user taps Staples, show products from the mapped Shopify collection.
+When user taps Sauces, show products from the mapped Shopify collection.
+When user taps Spices, show products from the mapped Shopify collection.
+
+Admin must allow:
+- add category
+- edit category name
+- change icon
+- change Shopify collection handle
+- assign country
+- reorder categories
+- active/inactive
+
+3. Content storage:
+For MVP, store app content in a local JSON/content file or simple editable storage.
+But structure it so later we can move to a real backend/CMS like Supabase, Firebase, Sanity, or Shopify Metaobjects.
+
+Create:
+- services/content/appContentService.ts
+- data/appContent.json
+- screens/AdminContentScreen.tsx
+- types/appContent.ts
+
+4. Customer UX fixes:
+- My Baskets carousel must be scrollable horizontally.
+- Meal Inspiration carousel must be scrollable horizontally.
+- Meal Inspiration must have a right arrow.
+- Clicking meal card should open meal detail.
+- Product category chips must be scrollable horizontally.
+- Category chips must be clickable and open product list.
+- Cart icon at top right must be clickable and navigate to cart.
+- Cart badge must update when products are added.
+
+5. Cart total / delivery / VAT issue:
+Currently the app subtotal is shown, then Shopify checkout may add delivery and VAT later. This creates surprise and cart drop.
+
+We need to make totals more transparent.
+
+Use Shopify Cart API cost fields where possible:
+- subtotalAmount
+- totalAmount
+- totalTaxAmount
+- checkoutUrl
+
+Also investigate Shopify Storefront API delivery groups/options for cart shipping rates.
+
+If exact shipping/delivery fee cannot be pulled before checkout without full address or Shopify limitation, then:
+- clearly show “Delivery and VAT calculated securely at checkout”
+- show an estimated delivery fee based on selected emirate
+- show estimated total
+- label it clearly as “Estimated total”
+- avoid showing it as final total unless it matches Shopify checkout
+
+Goal:
+Reduce checkout surprise.
+
+If possible, update the cart with buyer identity/location before checkout so Shopify can estimate tax/shipping more accurately.
+
+6. Delivery location:
+Selected emirate should affect delivery messaging:
+- Dubai: same-day delivery available only fro uganda items 
+- Other emirates: next-day delivery available
+
+Shippign charge fro same day delivery fro uganda in dubai is 35
+
+Next day delivery fro all country is 20
+
+Add 5 percent vat on the product for all not on the shipping 
+
+If shipping rates can be mapped manually for MVP, create deliveryConfig.ts:
+- Dubai estimated delivery fee
+- Abu Dhabi estimated delivery fee
+- Sharjah estimated delivery fee
+- Ajman estimated delivery fee
+- Ras Al Khaimah estimated delivery fee
+- Fujairah estimated delivery fee
+- Umm Al Quwain estimated delivery fee
+
+But clearly separate:
+- estimated app delivery
+- final Shopify checkout delivery
+
+7. Apply this per country:
+Everything must work for:
+- Uganda
+- Kenya
+- Ethiopia
+- Other African Countries
+- Show Me Everything
+
+Admin content must support country-specific baskets, meals, hero, and categories.
+
+8. Add developer notes:
+Explain:
+- What is controlled by Shopify
+- What is controlled by App Content Admin
+- What can be edited without code
+- What still requires developer work
+- Future recommendation for CMS/backend
+
+Do not just give me code snippets.
+Build the actual admin/content management functionality and customer-facing fixes.
+

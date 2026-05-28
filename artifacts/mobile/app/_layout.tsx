@@ -18,6 +18,7 @@ import { HomeCountryProvider } from "@/context/HomeCountryContext";
 import { CartProvider } from "@/context/CartContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LocationProvider } from "@/context/LocationContext";
+import { AppContentProvider } from "@/context/AppContentContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,6 +31,7 @@ function RootLayoutNav() {
       <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="admin-content" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -58,11 +60,13 @@ export default function RootLayout() {
             <KeyboardProvider>
               <LanguageProvider>
                 <LocationProvider>
+                  <AppContentProvider>
                   <HomeCountryProvider>
                     <CartProvider>
                       <RootLayoutNav />
                     </CartProvider>
                   </HomeCountryProvider>
+                </AppContentProvider>
                 </LocationProvider>
               </LanguageProvider>
             </KeyboardProvider>

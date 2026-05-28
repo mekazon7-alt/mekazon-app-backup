@@ -15,7 +15,6 @@ export interface ShopifyProductVariant {
   title: string;
   price: ShopifyMoneyV2;
   availableForSale: boolean;
-  quantityAvailable: number;
 }
 
 export interface ShopifyProduct {
@@ -61,7 +60,15 @@ export interface ShopifyCollectionSummary {
   title: string;
   description: string;
   image: ShopifyImage | null;
-  productsCount: number;
+  products: {
+    nodes: Array<{
+      id: string;
+      title: string;
+      priceRange: { minVariantPrice: ShopifyMoneyV2 };
+      featuredImage: ShopifyImage | null;
+    }>;
+    pageInfo: { hasNextPage: boolean };
+  };
 }
 
 export interface GetProductsOptions {

@@ -134,6 +134,14 @@ export const MOCK_COLLECTION_LIST = Object.values(MOCK_COLLECTIONS).map(
     title,
     description,
     image,
-    productsCount: products.nodes.length,
+    products: {
+      nodes: products.nodes.slice(0, 1).map((p) => ({
+        id: p.id,
+        title: p.title,
+        priceRange: { minVariantPrice: p.priceRange.minVariantPrice },
+        featuredImage: p.featuredImage,
+      })),
+      pageInfo: { hasNextPage: products.nodes.length > 1 },
+    },
   })
 );

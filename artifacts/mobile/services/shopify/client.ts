@@ -45,16 +45,15 @@ const COLLECTION_PRODUCTS_QUERY = `
       image { url altText width height }
       products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse) {
         nodes {
-          id handle title description descriptionHtml productType tags vendor availableForSale
+          id handle title description productType tags vendor availableForSale
           featuredImage { url altText width height }
           images(first: 3) { nodes { url altText width height } }
           priceRange {
             minVariantPrice { amount currencyCode }
             maxVariantPrice { amount currencyCode }
           }
-          compareAtPriceRange { minVariantPrice { amount currencyCode } }
           variants(first: 5) {
-            nodes { id title availableForSale quantityAvailable price { amount currencyCode } }
+            nodes { id title availableForSale price { amount currencyCode } }
           }
         }
         pageInfo { hasNextPage endCursor }
@@ -67,8 +66,12 @@ const COLLECTIONS_QUERY = `
   query GetCollections($first: Int!) {
     collections(first: $first) {
       nodes {
-        id handle title description productsCount
+        id handle title description
         image { url altText width height }
+        products(first: 1) {
+          nodes { id title priceRange { minVariantPrice { amount currencyCode } } featuredImage { url altText width height } }
+          pageInfo { hasNextPage }
+        }
       }
     }
   }

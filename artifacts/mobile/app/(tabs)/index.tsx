@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ScrollView as ScrollViewType,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -71,6 +72,37 @@ export default function HomeScreen() {
   const [locationSheetVisible, setLocationSheetVisible] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
+  const [showAllBaskets, setShowAllBaskets] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [basketScrollX, setBasketScrollX] = useState(0);
+  const basketScrollRef = useRef<ScrollViewType>(null);
+
+  const BASKET_CARD_STEP = 262;
+  const scrollBaskets = useCallback((dir: "left" | "right") => {
+    const next = dir === "right"
+      ? basketScrollX + BASKET_CARD_STEP
+      : Math.max(0, basketScrollX - BASKET_CARD_STEP);
+    basketScrollRef.current?.scrollTo({ x: next, animated: true });
+    setBasketScrollX(next);
+  }, [basketScrollX]);
+
+  const activeCat = selectedCategory || (experience?.categories[0]?.name ?? "");
+
+  const filteredProducts = useMemo(() => {
+    if (!experience || activeCat === (experience.categories[0]?.name ?? "")) {
+      return shopifyProducts;
+    }
+    const keywords = experience.categoryKeywords?.[activeCat] ?? [];
+    if (keywords.length === 0) return shopifyProducts;
+    const lower = keywords.map((k) => k.toLowerCase());
+    return shopifyProducts.filter((p) =>
+      lower.some(
+        (kw) =>
+          p.name.toLowerCase().includes(kw) ||
+          p.description.toLowerCase().includes(kw)
+      )
+    );
+  }, [activeCat, shopifyProducts, experience]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -201,31 +233,35 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesScroll}
           >
-            {experience.categories.map((cat, i) => (
-              <Pressable
-                key={cat.name}
-                style={[
-                  styles.categoryChip,
-                  i === 0
-                    ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                    : { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <Ionicons
-                  name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
-                  size={14}
-                  color={i === 0 ? "#FFFFFF" : colors.primary}
-                />
-                <Text
+            {experience.categories.map((cat) => {
+              const isActive = cat.name === activeCat;
+              return (
+                <Pressable
+                  key={cat.name}
                   style={[
-                    styles.categoryText,
-                    { color: i === 0 ? "#FFFFFF" : colors.foreground },
+                    styles.categoryChip,
+                    isActive
+                      ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                      : { backgroundColor: colors.card, borderColor: colors.border },
                   ]}
+                  onPress={() => setSelectedCategory(cat.name)}
                 >
-                  {cat.name}
-                </Text>
-              </Pressable>
-            ))}
+                  <Ionicons
+                    name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
+                    size={14}
+                    color={isActive ? "#FFFFFF" : colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      { color: isActive ? "#FFFFFF" : colors.foreground },
+                    ]}
+                  >
+                    {cat.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
         </View>
 
@@ -234,18 +270,39 @@ export default function HomeScreen() {
           <SectionHeader
             title={HOME_SECTIONS.baskets.title}
             subtitle={HOME_SECTIONS.baskets.subtitle(experience.name)}
-            onSeeAll={() => router.push("/(tabs)/search")}
+            onSeeAll={() => setShowAllBaskets(true)}
           />
-          <ScrollView
-            horizontal
-            nestedScrollEnabled
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-          >
-            {experience.baskets.map((basket) => (
-              <BasketCard key={basket.id} basket={basket} />
-            ))}
-          </ScrollView>
+          <View style={styles.basketScrollWrapper}>
+            <ScrollView
+              ref={basketScrollRef}
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+              onScroll={(e) => setBasketScrollX(e.nativeEvent.contentOffset.x)}
+              scrollEventThrottle={32}
+            >
+              {experience.baskets.map((basket) => (
+                <BasketCard key={basket.id} basket={basket} />
+              ))}
+            </ScrollView>
+            {basketScrollX > 10 && (
+              <Pressable
+                style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => scrollBaskets("left")}
+              >
+                <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+              </Pressable>
+            )}
+            {experience.baskets.length > 1 && (
+              <Pressable
+                style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => scrollBaskets("right")}
+              >
+                <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {/* Cravings Right Now */}
@@ -266,7 +323,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {shopifyProducts.slice(0, 6).map((product) => (
+              {filteredProducts.slice(0, 6).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </ScrollView>
@@ -322,7 +379,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {shopifyProducts.slice(4).map((product) => (
+            {filteredProducts.slice(4).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </ScrollView>
@@ -427,6 +484,31 @@ export default function HomeScreen() {
                 </Pressable>
               );
             })}
+          </ScrollView>
+        </Animated.View>
+      </Modal>
+
+      {/* All Baskets Modal */}
+      <Modal visible={showAllBaskets} animationType="slide" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAllBaskets(false)} />
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[styles.modalSheet, { backgroundColor: colors.background }]}
+        >
+          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+            {HOME_SECTIONS.baskets.title}
+          </Text>
+          <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>
+            {experience ? HOME_SECTIONS.baskets.subtitle(experience.name).toUpperCase() : ""}
+          </Text>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 4 }}>
+            {(experience?.baskets ?? []).map((basket) => (
+              <View key={basket.id} style={[styles.basketListItem, { borderColor: colors.border }]}>
+                <BasketCard basket={basket} />
+              </View>
+            ))}
+            <View style={{ height: 24 }} />
           </ScrollView>
         </Animated.View>
       </Modal>
@@ -692,6 +774,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
   },
+  basketScrollWrapper: { position: "relative" },
+  basketArrow: {
+    position: "absolute",
+    top: "35%",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
+    zIndex: 10,
+  },
+  basketArrowLeft: { left: 6 },
+  basketArrowRight: { right: 6 },
+  basketListItem: { marginBottom: 14 },
   categoriesSection: { marginBottom: 26 },
   categoriesScroll: { paddingHorizontal: 22, gap: 8 },
   categoryChip: {

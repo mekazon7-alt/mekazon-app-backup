@@ -35,6 +35,13 @@ export interface CountryConfig {
   nativeGreeting: string;
   tagline: string;
   categories: Array<{ name: string; icon: string }>;
+  /**
+   * categoryKeywords — maps each category name to a list of search keywords.
+   * Products whose name or description contains any of these words will appear
+   * when that category chip is selected. Add new products to a category by
+   * adding their name or a unique word from their name to the keyword list.
+   */
+  categoryKeywords: Record<string, string[]>;
   products: Product[];
   baskets: Basket[];
   searchSuggestions: string[];
@@ -59,6 +66,14 @@ const UGANDA: CountryConfig = {
     { name: "Drinks", icon: "cafe" },
     { name: "Deals", icon: "pricetag" },
   ],
+  categoryKeywords: {
+    Fresh: ["fresh", "matooke", "sukuma", "cassava", "green", "banana"],
+    Staples: ["posho", "flour", "maize", "cassava flour", "groundnut paste"],
+    Sauces: ["sauce", "chili", "paste", "soup mix", "g-nut"],
+    Spices: ["spice", "rolex", "seasoning", "blend"],
+    Drinks: ["drink", "juice", "tea", "coffee", "water"],
+    Deals: [],
+  },
   products: [
     { id: "ug1", name: "Matooke Bunches", description: "Fresh green cooking bananas, unripe", price: 18.50, currency: "AED", unit: "per bunch", tag: "Popular", cardColor: "#4A7A32", imageKey: "lifestyle-matooke" },
     { id: "ug2", name: "Posho (Maize Flour)", description: "Finest white maize flour, 2kg", price: 12.00, currency: "AED", unit: "2kg bag", tag: "Staple", cardColor: "#C4A24A", imageKey: "product-unga" },
@@ -96,6 +111,14 @@ const KENYA: CountryConfig = {
     { name: "Legumes", icon: "leaf" },
     { name: "Deals", icon: "pricetag" },
   ],
+  categoryKeywords: {
+    Flours: ["flour", "unga", "posho", "fufu", "maize", "wheat"],
+    Sauces: ["sauce", "mchuzi", "royco", "mix", "masala", "spice", "pilau"],
+    Dairy: ["dairy", "margarine", "blue band", "mursik", "milk", "butter", "band"],
+    Tea: ["tea", "chai"],
+    Legumes: ["legumes", "githeri", "bean", "lentil", "pea", "maize beans"],
+    Deals: [],
+  },
   products: [
     { id: "ke1", name: "Unga (Maize Flour)", description: "Premium Kenyan white maize flour", price: 13.50, currency: "AED", unit: "2kg bag", tag: "Staple", cardColor: "#C4A24A", imageKey: "product-unga" },
     { id: "ke2", name: "Royco Mchuzi Mix", description: "Authentic Kenyan cooking spice blend", price: 8.00, currency: "AED", unit: "200g", tag: "Must-Have", cardColor: "#CC4422", imageKey: "product-royco" },
@@ -133,6 +156,14 @@ const ETHIOPIA: CountryConfig = {
     { name: "Sauces", icon: "flask" },
     { name: "Deals", icon: "pricetag" },
   ],
+  categoryKeywords: {
+    Grains: ["grain", "teff", "flour", "injera", "barley", "wheat", "corn"],
+    Spices: ["spice", "berbere", "mitmita", "blend", "pepper", "chili", "powder"],
+    Coffee: ["coffee", "tej", "honey", "wine", "brew"],
+    Ready: ["ready", "injera", "fresh", "kit"],
+    Sauces: ["sauce", "shiro", "niter", "kibbeh", "butter", "oil"],
+    Deals: [],
+  },
   products: [
     { id: "et1", name: "Teff Flour", description: "Premium white & brown teff, for injera", price: 22.00, currency: "AED", unit: "1kg", tag: "Authentic", cardColor: "#8B6914", imageKey: "product-teff" },
     { id: "et2", name: "Injera (Ready)", description: "Freshly made injera, same-day delivery", price: 28.00, currency: "AED", unit: "5 pieces", tag: "Fresh", cardColor: "#C4A86E", imageKey: "lifestyle-injera" },
@@ -170,6 +201,14 @@ const OTHER: CountryConfig = {
     { name: "Snacks", icon: "fast-food" },
     { name: "Deals", icon: "pricetag" },
   ],
+  categoryKeywords: {
+    "West African": ["jollof", "suya", "plantain", "kelewele", "egusi", "fufu", "ogbono", "stockfish", "palm"],
+    Grains: ["grain", "fufu", "flour", "cassava", "plantain", "yam", "maize"],
+    Spices: ["spice", "suya", "jollof", "seasoning", "blend", "pepper"],
+    Soups: ["soup", "egusi", "ogbono", "stockfish", "palm oil", "draw"],
+    Snacks: ["snack", "plantain", "chips", "puff", "kelewele"],
+    Deals: [],
+  },
   products: [
     { id: "af1", name: "Egusi (Melon Seeds)", description: "Dried melon seeds for Nigerian soups", price: 16.00, currency: "AED", unit: "500g", tag: "Popular", cardColor: "#C4A24A" },
     { id: "af2", name: "Fufu Flour", description: "West African cassava & plantain blend", price: 14.00, currency: "AED", unit: "1kg", cardColor: "#D4C08A" },
@@ -207,6 +246,14 @@ const ALL: CountryConfig = {
     { name: "Spices", icon: "color-palette" },
     { name: "Coffee", icon: "cafe" },
   ],
+  categoryKeywords: {
+    Uganda: ["matooke", "posho", "cassava", "groundnut", "sukuma", "rolex", "g-nut", "ugandan"],
+    Kenya: ["unga", "royco", "blue band", "githeri", "pilau", "mursik", "kenyan", "chai"],
+    Ethiopia: ["teff", "injera", "berbere", "shiro", "niter", "kibbeh", "mitmita", "tej", "ethiopian"],
+    "West Africa": ["egusi", "fufu", "jollof", "suya", "plantain", "ogbono", "stockfish", "palm"],
+    Spices: ["spice", "berbere", "jollof", "suya", "rolex", "mitmita", "pilau", "blend", "seasoning"],
+    Coffee: ["coffee", "tej", "honey", "brew"],
+  },
   products: [
     ...UGANDA.products.slice(0, 2),
     ...KENYA.products.slice(0, 2),

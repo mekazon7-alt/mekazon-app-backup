@@ -7,12 +7,16 @@ import { getProductsByCollectionHandle } from "./client";
 import { shopifyProductsToProducts } from "./transforms";
 import type { Product } from "@/constants/personalization";
 
+// ---------------------------------------------------------------------------
+// Collection handle mapping — edit these to match your Shopify collection URLs
+// Each value is the "handle" shown in: Shopify Admin → Products → Collections → [collection] → URL
+// ---------------------------------------------------------------------------
 export const COUNTRY_COLLECTION_HANDLES: Record<HomeCountry, string> = {
-  uganda: "ugandan-products",
-  kenya: "kenyan-products",
-  ethiopia: "ethiopian-products",
-  other: "other-african-products",
-  all: "all-african-products",
+  uganda:   "uganda-food-staff",
+  kenya:    "kenyan-foodstuff",
+  ethiopia: "ethiopia-food-near-me",
+  other:    "west-africa",
+  all:      "all-product",
 };
 
 export async function getProductsForCountry(country: HomeCountry): Promise<Product[]> {

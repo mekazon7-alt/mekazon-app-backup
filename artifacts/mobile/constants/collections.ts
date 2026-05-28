@@ -47,7 +47,7 @@ const ALL_BASKETS: Basket[] = [UGANDA_BASKETS[0], KENYA_BASKETS[0], ETHIOPIA_BAS
 export const COLLECTION_EXPERIENCES: Record<HomeCountry, CollectionExperience> = {
   uganda: {
     country: "uganda",
-    collectionHandle: "ugandan-products",
+    collectionHandle: "uganda-food-staff",
     name: "Uganda",
     flagColors: ["#000000", "#FFCC00", "#DD0000"],
     heroTitle: "Ebyo eby'ewaka.",
@@ -70,7 +70,7 @@ export const COLLECTION_EXPERIENCES: Record<HomeCountry, CollectionExperience> =
   },
   kenya: {
     country: "kenya",
-    collectionHandle: "kenyan-products",
+    collectionHandle: "kenyan-foodstuff",
     name: "Kenya",
     flagColors: ["#006600", "#CC0001", "#000000"],
     heroTitle: "Ladha ya nyumbani.",
@@ -93,7 +93,7 @@ export const COLLECTION_EXPERIENCES: Record<HomeCountry, CollectionExperience> =
   },
   ethiopia: {
     country: "ethiopia",
-    collectionHandle: "ethiopian-products",
+    collectionHandle: "ethiopia-food-near-me",
     name: "Ethiopia",
     flagColors: ["#009A44", "#FCDD09", "#EF3340"],
     heroTitle: "Ye ina bet t'aam.",
@@ -116,7 +116,7 @@ export const COLLECTION_EXPERIENCES: Record<HomeCountry, CollectionExperience> =
   },
   other: {
     country: "other",
-    collectionHandle: "other-african-products",
+    collectionHandle: "west-africa",
     name: "Other African Countries",
     flagColors: ["#009A44", "#FCDD09", "#CC0000"],
     heroTitle: "Africa's Finest.",
@@ -139,7 +139,7 @@ export const COLLECTION_EXPERIENCES: Record<HomeCountry, CollectionExperience> =
   },
   all: {
     country: "all",
-    collectionHandle: "all-african-products",
+    collectionHandle: "all-product",
     name: "All of Africa",
     flagColors: ["#C8581C", "#C8581C", "#C8581C"],
     heroTitle: "One App. Every African Kitchen.",

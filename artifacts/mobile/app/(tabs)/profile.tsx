@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Modal,
@@ -190,6 +191,18 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
             </Pressable>
           ))}
+        </View>
+
+        {/* Developer Tools */}
+        <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Pressable
+            style={[styles.menuRow, { borderBottomColor: "transparent" }]}
+            onPress={() => router.push("/debug-collections")}
+          >
+            <Ionicons name="git-branch-outline" size={20} color={colors.mutedForeground} />
+            <Text style={[styles.menuLabel, { color: colors.foreground }]}>Debug: Shopify Collections</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </Pressable>
         </View>
 
         <Text style={[styles.shopifyNote, { color: colors.mutedForeground }]}>

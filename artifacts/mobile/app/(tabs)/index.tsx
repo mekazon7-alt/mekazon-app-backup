@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -32,6 +32,7 @@ import {
   HOME_SECTIONS,
   TRUST_ITEMS,
   MEAL_INSPIRATION_LABELS,
+  MEAL_RECIPES,
 } from "@/constants/appContent";
 
 const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -69,6 +70,7 @@ export default function HomeScreen() {
   const { deliveryLabel, selectedEmirate } = useLocation();
   const [locationSheetVisible, setLocationSheetVisible] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -236,6 +238,7 @@ export default function HomeScreen() {
           />
           <ScrollView
             horizontal
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
@@ -259,6 +262,7 @@ export default function HomeScreen() {
           ) : (
             <ScrollView
               horizontal
+              nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
@@ -275,20 +279,29 @@ export default function HomeScreen() {
             <SectionHeader title={HOME_SECTIONS.mealInspiration.title} subtitle={HOME_SECTIONS.mealInspiration.subtitle} />
             <ScrollView
               horizontal
+              nestedScrollEnabled
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
               {lifestyleKeys.map((key) => (
-                <Pressable key={key} style={styles.inspirationCard}>
+                <Pressable
+                  key={key}
+                  style={styles.inspirationCard}
+                  onPress={() => setSelectedMeal(key)}
+                >
                   <Image source={LIFESTYLE_IMAGES[key]} style={styles.inspirationImage} contentFit="cover" />
                   <LinearGradient
-                    colors={["transparent", "rgba(20,24,16,0.65)"]}
+                    colors={["transparent", "rgba(20,24,16,0.72)"]}
                     style={StyleSheet.absoluteFill}
                   />
                   <View style={styles.inspirationTextWrap}>
                     <Text style={styles.inspirationLabel}>
-                    {MEAL_INSPIRATION_LABELS[key] ?? formatLifestyleKey(key)}
-                  </Text>
+                      {MEAL_INSPIRATION_LABELS[key] ?? formatLifestyleKey(key)}
+                    </Text>
+                    <View style={styles.inspirationCta}>
+                      <Text style={styles.inspirationCtaText}>See recipe</Text>
+                      <Ionicons name="arrow-forward" size={10} color="rgba(255,255,255,0.9)" />
+                    </View>
                   </View>
                 </Pressable>
               ))}
@@ -305,6 +318,7 @@ export default function HomeScreen() {
           />
           <ScrollView
             horizontal
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
@@ -415,6 +429,95 @@ export default function HomeScreen() {
             })}
           </ScrollView>
         </Animated.View>
+      </Modal>
+
+      {/* Meal Recipe Modal */}
+      <Modal visible={!!selectedMeal} animationType="slide" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setSelectedMeal(null)} />
+        {selectedMeal && (() => {
+          const recipe = MEAL_RECIPES[selectedMeal];
+          const image = LIFESTYLE_IMAGES[selectedMeal];
+          if (!recipe) return null;
+          return (
+            <Animated.View
+              entering={FadeInDown.duration(300)}
+              style={[styles.recipeSheet, { backgroundColor: colors.background }]}
+            >
+              {/* Hero image */}
+              <View style={styles.recipeHeroWrap}>
+                {image && (
+                  <Image source={image} style={styles.recipeHeroImage} contentFit="cover" />
+                )}
+                <LinearGradient
+                  colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.55)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Pressable
+                  style={[styles.recipeCloseBtn, { backgroundColor: "rgba(0,0,0,0.35)" }]}
+                  onPress={() => setSelectedMeal(null)}
+                >
+                  <Ionicons name="close" size={20} color="#FFFFFF" />
+                </Pressable>
+                <View style={styles.recipeHeroContent}>
+                  <Text style={styles.recipeHeroTitle}>{recipe.name}</Text>
+                  <View style={styles.recipeMeta}>
+                    <View style={styles.recipeMetaItem}>
+                      <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.85)" />
+                      <Text style={styles.recipeMetaText}>{recipe.prepTime} prep</Text>
+                    </View>
+                    <View style={styles.recipeMetaItem}>
+                      <Ionicons name="flame-outline" size={13} color="rgba(255,255,255,0.85)" />
+                      <Text style={styles.recipeMetaText}>{recipe.cookTime} cook</Text>
+                    </View>
+                    <View style={styles.recipeMetaItem}>
+                      <Ionicons name="people-outline" size={13} color="rgba(255,255,255,0.85)" />
+                      <Text style={styles.recipeMetaText}>Serves {recipe.servings}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={styles.recipeBody}
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={[styles.recipeDescription, { color: colors.mutedForeground }]}>
+                  {recipe.description}
+                </Text>
+
+                <Text style={[styles.recipeSectionTitle, { color: colors.foreground }]}>
+                  Ingredients
+                </Text>
+                {recipe.ingredients.map((ing, i) => (
+                  <View key={i} style={styles.ingredientRow}>
+                    <View style={[styles.ingredientDot, { backgroundColor: colors.primary }]} />
+                    <Text style={[styles.ingredientText, { color: colors.foreground }]}>{ing}</Text>
+                  </View>
+                ))}
+
+                <Text style={[styles.recipeSectionTitle, { color: colors.foreground }]}>
+                  Method
+                </Text>
+                {recipe.steps.map((step, i) => (
+                  <View key={i} style={styles.stepRow}>
+                    <View style={[styles.stepNumber, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                      <Text style={[styles.stepNumberText, { color: colors.primary }]}>{i + 1}</Text>
+                    </View>
+                    <Text style={[styles.stepText, { color: colors.foreground }]}>{step}</Text>
+                  </View>
+                ))}
+
+                {recipe.tip && (
+                  <View style={[styles.recipeTip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                    <Ionicons name="bulb-outline" size={16} color={colors.primary} />
+                    <Text style={[styles.recipeTipText, { color: colors.foreground }]}>{recipe.tip}</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </Animated.View>
+          );
+        })()}
       </Modal>
     </View>
   );
@@ -629,6 +732,90 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.2,
   },
+  inspirationCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  inspirationCtaText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  recipeSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "88%",
+    overflow: "hidden",
+  },
+  recipeHeroWrap: {
+    height: 210,
+    position: "relative",
+  },
+  recipeHeroImage: { width: "100%", height: "100%" },
+  recipeCloseBtn: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recipeHeroContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+  },
+  recipeHeroTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: -0.6,
+    marginBottom: 8,
+  },
+  recipeMeta: { flexDirection: "row", gap: 14 },
+  recipeMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  recipeMetaText: { fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: "500" },
+  recipeBody: { padding: 22, paddingBottom: 40, gap: 6 },
+  recipeDescription: { fontSize: 14, lineHeight: 21, marginBottom: 16 },
+  recipeSectionTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  ingredientRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 8 },
+  ingredientDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
+  ingredientText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  stepNumberText: { fontSize: 13, fontWeight: "800" },
+  stepText: { flex: 1, fontSize: 14, lineHeight: 21 },
+  recipeTip: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginTop: 16,
+  },
+  recipeTipText: { flex: 1, fontSize: 13, lineHeight: 19, fontStyle: "italic" },
   productsLoader: {
     height: 160,
     alignItems: "center",

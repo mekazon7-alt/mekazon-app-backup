@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -27,11 +27,12 @@ const PRODUCT_IMAGES: Record<string, ReturnType<typeof require>> = {
 
 interface ProductCardProps {
   product: Product;
+  cardStyle?: ViewStyle;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, cardStyle }: ProductCardProps) {
   const colors = useColors();
   const { addItem, items } = useCart();
   const scale = useSharedValue(1);
@@ -57,6 +58,7 @@ export function ProductCard({ product }: ProductCardProps) {
         styles.card,
         { backgroundColor: colors.card, borderColor: colors.border },
         animStyle,
+        cardStyle,
       ]}
       onPress={handleAdd}
     >

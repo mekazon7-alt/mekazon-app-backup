@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -18,18 +19,20 @@ import { ProductCard } from "@/components/ProductCard";
 export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { experience, shopifyProducts } = useHomeCountry();
+  const { experience, shopifyProducts, productsLoading } = useHomeCountry();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
 
-  const filtered = shopifyProducts.filter(
-    (p) =>
-      p.name.toLowerCase().includes(query.toLowerCase()) ||
-      p.description.toLowerCase().includes(query.toLowerCase())
-  );
+  const filtered = query.length > 0
+    ? shopifyProducts.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          p.description.toLowerCase().includes(query.toLowerCase())
+      )
+    : shopifyProducts;
 
   const suggestions = experience?.searchSuggestions ?? [];
 
@@ -68,69 +71,65 @@ export default function SearchScreen() {
       <ScrollView
         contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {query.length === 0 ? (
-          <>
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-                {experience ? `What ${experience.name} shops for` : "Trending"}
-              </Text>
-              <View style={styles.suggestions}>
-                {suggestions.map((s) => (
-                  <Pressable
-                    key={s}
-                    style={[
-                      styles.suggestionPill,
-                      { backgroundColor: colors.secondary, borderColor: colors.border },
-                    ]}
-                    onPress={() => setQuery(s)}
-                  >
-                    <Ionicons name="search" size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.suggestionText, { color: colors.foreground }]}>{s}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Browse All Products</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.productRow}
-              >
-                {shopifyProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </ScrollView>
-            </View>
-          </>
-        ) : (
+        {/* Search suggestions — shown when search bar is empty */}
+        {query.length === 0 && suggestions.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
-              {filtered.length} result{filtered.length !== 1 ? "s" : ""} for "{query}"
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+              {experience ? `What ${experience.name} shops for` : "Trending"}
             </Text>
-            {filtered.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="search-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nothing found</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-                  Try a different term or browse categories
-                </Text>
-              </View>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.productRow}
-              >
-                {filtered.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </ScrollView>
-            )}
+            <View style={styles.suggestions}>
+              {suggestions.map((s) => (
+                <Pressable
+                  key={s}
+                  style={[
+                    styles.suggestionPill,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                  ]}
+                  onPress={() => setQuery(s)}
+                >
+                  <Ionicons name="search" size={13} color={colors.mutedForeground} />
+                  <Text style={[styles.suggestionText, { color: colors.foreground }]}>{s}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         )}
+
+        {/* Product grid */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            {query.length > 0
+              ? `${filtered.length} result${filtered.length !== 1 ? "s" : ""} for "${query}"`
+              : "Browse All Products"}
+          </Text>
+
+          {productsLoading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+                Loading products...
+              </Text>
+            </View>
+          ) : filtered.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={40} color={colors.mutedForeground} />
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nothing found</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+                Try a different term or browse your country's collection
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.productGrid}>
+              {filtered.map((p) => (
+                <View key={p.id} style={styles.productGridItem}>
+                  <ProductCard product={p} cardStyle={styles.productGridCard} />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -160,7 +159,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
     paddingHorizontal: 20,
     marginBottom: 14,
@@ -185,14 +184,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
   },
-  productRow: {
-    paddingHorizontal: 20,
-    paddingBottom: 4,
+  productGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  productGridItem: {
+    width: "48.5%",
+  },
+  productGridCard: {
+    width: "100%",
+  },
+  loadingState: {
+    alignItems: "center",
+    paddingVertical: 50,
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
   },
   emptyState: {
     alignItems: "center",
     paddingVertical: 50,
     gap: 10,
+    paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,

@@ -112,12 +112,20 @@ export default function SearchScreen() {
                 Loading products...
               </Text>
             </View>
-          ) : filtered.length === 0 ? (
+          ) : filtered.length === 0 && query.length > 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="search-outline" size={40} color={colors.mutedForeground} />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nothing found</Text>
               <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-                Try a different term or browse your country's collection
+                Try a different search term
+              </Text>
+            </View>
+          ) : filtered.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="basket-outline" size={40} color={colors.mutedForeground} />
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Products loading</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+                Your country's products will appear here
               </Text>
             </View>
           ) : (

@@ -232,7 +232,10 @@ export default function HomeScreen() {
             <Text style={[styles.greeting, { color: colors.foreground }]}>{timeGreeting}</Text>
           </View>
           <View style={styles.headerRight}>
-            <Pressable style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Pressable
+              style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              onPress={() => router.push("/(tabs)/profile")}
+            >
               <Ionicons name="notifications-outline" size={20} color={colors.foreground} />
             </Pressable>
             <Pressable

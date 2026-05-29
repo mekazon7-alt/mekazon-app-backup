@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
 import { useHomeCountry } from "@/context/HomeCountryContext";
+import { LocationBottomSheet } from "@/components/LocationBottomSheet";
 import { CART_CONTENT } from "@/constants/appContent";
 import { computeDeliveryFee, computeVAT, isSameDayEligible } from "@/constants/deliveryConfig";
 
@@ -28,6 +29,7 @@ export default function CartScreen() {
   const { selectedEmirate } = useLocation();
   const { homeCountry } = useHomeCountry();
   const { items, totalItems, totalPrice, updateQuantity, clearCart, checkoutLoading, shopifyCheckout } = useCart();
+  const [showLocationSheet, setShowLocationSheet] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -235,12 +237,16 @@ export default function CartScreen() {
               </View>
 
               {!selectedEmirate && (
-                <View style={[styles.locationNudge, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "44" }]}>
+                <Pressable
+                  style={[styles.locationNudge, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "44" }]}
+                  onPress={() => setShowLocationSheet(true)}
+                >
                   <Ionicons name="location-outline" size={13} color={colors.accent} />
                   <Text style={[styles.locationNudgeText, { color: colors.accent }]}>
-                    Choose your emirate for an accurate delivery estimate
+                    Tap to choose your emirate for a delivery estimate
                   </Text>
-                </View>
+                  <Ionicons name="chevron-forward" size={13} color={colors.accent} />
+                </Pressable>
               )}
             </View>
 
@@ -266,6 +272,10 @@ export default function CartScreen() {
           </View>
         </>
       )}
+      <LocationBottomSheet
+        visible={showLocationSheet}
+        onClose={() => setShowLocationSheet(false)}
+      />
     </View>
   );
 }

@@ -184,7 +184,7 @@ export default function ProfileScreen() {
               <Text style={[styles.changeText, { color: colors.primary }]}>{t("profileChange")}</Text>
             </Pressable>
           </View>
-          {currentOption && (
+          {currentOption ? (
             <View style={styles.homeRow}>
               <View style={styles.flagBar}>
                 {currentOption.flagColors.map((color, i) => (
@@ -197,6 +197,17 @@ export default function ProfileScreen() {
               </View>
               <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
             </View>
+          ) : (
+            <Pressable style={styles.homeRow} onPress={() => setShowCountryPicker(true)}>
+              <View style={[styles.locationIconWrap, { backgroundColor: colors.secondary }]}>
+                <Ionicons name="earth-outline" size={16} color={colors.primary} />
+              </View>
+              <View style={styles.homeInfo}>
+                <Text style={[styles.homeName, { color: colors.mutedForeground }]}>Not selected</Text>
+                <Text style={[styles.homeTagline, { color: colors.primary }]}>Tap to choose your home country</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
           )}
         </View>
 
@@ -388,16 +399,6 @@ export default function ProfileScreen() {
             <Text style={styles.adminLoginBtnText}>Sign In</Text>
           </Pressable>
 
-          {/* Change password placeholder */}
-          <Pressable style={[styles.changePwRow, { borderTopColor: colors.border }]} disabled>
-            <Ionicons name="key-outline" size={15} color={colors.mutedForeground} />
-            <Text style={[styles.changePwText, { color: colors.mutedForeground }]}>
-              Change password
-            </Text>
-            <Text style={[styles.changePwComingSoon, { color: colors.mutedForeground }]}>
-              coming soon
-            </Text>
-          </Pressable>
 
         </Animated.View>
       </Modal>
@@ -590,16 +591,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   adminLoginBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
-  changePwRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    opacity: 0.5,
-  },
-  changePwText: { flex: 1, fontSize: 14 },
-  changePwComingSoon: { fontSize: 11, fontStyle: "italic" },
   devNote: {
     flexDirection: "row",
     gap: 8,

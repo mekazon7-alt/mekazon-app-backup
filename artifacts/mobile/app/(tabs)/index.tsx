@@ -31,7 +31,7 @@ import { useImageStore } from "@/context/ImageStoreContext";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
 import { LANGUAGE_META, COUNTRY_SUGGESTED_LANGUAGE, type SupportedLanguage } from "@/lib/i18n";
 import { HERO_COPY, HOME_SECTIONS, TRUST_ITEMS } from "@/constants/appContent";
-import type { AdminMeal } from "@/types/appContent";
+import type { AdminMeal, AdminCategory } from "@/types/appContent";
 
 const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   "hero-uganda": require("@/assets/images/hero-uganda.png"),
@@ -73,13 +73,17 @@ export default function HomeScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<AdminMeal | null>(null);
   const [showAllBaskets, setShowAllBaskets] = useState(false);
+  const [showAllMeals, setShowAllMeals] = useState(false);
+  const [showReadyFood, setShowReadyFood] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [basketScrollX, setBasketScrollX] = useState(0);
   const basketScrollRef = useRef<ScrollViewType>(null);
+  const [mealScrollX, setMealScrollX] = useState(0);
+  const mealScrollRef = useRef<ScrollViewType>(null);
 
   const adminBaskets = homeCountry ? getBasketsForCountry(homeCountry) : (experience?.baskets ?? []);
   const adminMeals = homeCountry ? getMealsForCountry(homeCountry) : [];
-  const adminCategories = homeCountry ? getCategoriesForCountry(homeCountry) : (experience?.categories ?? []);
+  const adminCategories: AdminCategory[] = homeCountry ? getCategoriesForCountry(homeCountry) : [];
 
   const BASKET_CARD_STEP = 262;
   const scrollBaskets = useCallback((dir: "left" | "right") => {
@@ -89,6 +93,15 @@ export default function HomeScreen() {
     basketScrollRef.current?.scrollTo({ x: next, animated: true });
     setBasketScrollX(next);
   }, [basketScrollX]);
+
+  const MEAL_CARD_STEP = 190;
+  const scrollMeals = useCallback((dir: "left" | "right") => {
+    const next = dir === "right"
+      ? mealScrollX + MEAL_CARD_STEP
+      : Math.max(0, mealScrollX - MEAL_CARD_STEP);
+    mealScrollRef.current?.scrollTo({ x: next, animated: true });
+    setMealScrollX(next);
+  }, [mealScrollX]);
 
   const firstCat = adminCategories[0]?.name ?? "";
   const activeCat = selectedCategory || firstCat;
@@ -262,7 +275,10 @@ export default function HomeScreen() {
                         ? { backgroundColor: colors.primary, borderColor: colors.primary }
                         : { backgroundColor: colors.card, borderColor: colors.border },
                     ]}
-                    onPress={() => setSelectedCategory(isActive ? "" : cat.name)}
+                    onPress={() => {
+                      if (cat.name === "Ready Food") { setShowReadyFood(true); return; }
+                      setSelectedCategory(isActive ? "" : cat.name);
+                    }}
                   >
                     <Ionicons
                       name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
@@ -357,39 +373,61 @@ export default function HomeScreen() {
             <SectionHeader
               title={HOME_SECTIONS.mealInspiration.title}
               subtitle={HOME_SECTIONS.mealInspiration.subtitle}
+              onSeeAll={() => setShowAllMeals(true)}
             />
-            <ScrollView
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {adminMeals.map((meal) => {
-                const mealStoredUri = uriMap["meal:" + meal.id];
-                const image = mealStoredUri ? { uri: mealStoredUri } : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
-                if (!image) return null;
-                return (
-                  <Pressable
-                    key={meal.id}
-                    style={styles.inspirationCard}
-                    onPress={() => setSelectedMeal(meal)}
-                  >
-                    <Image source={image} style={styles.inspirationImage} contentFit="cover" />
-                    <LinearGradient
-                      colors={["transparent", "rgba(20,24,16,0.72)"]}
-                      style={StyleSheet.absoluteFill}
-                    />
-                    <View style={styles.inspirationTextWrap}>
-                      <Text style={styles.inspirationLabel}>{meal.name}</Text>
-                      <View style={styles.inspirationCta}>
-                        <Text style={styles.inspirationCtaText}>See recipe</Text>
-                        <Ionicons name="arrow-forward" size={10} color="rgba(255,255,255,0.9)" />
+            <View style={styles.basketScrollWrapper}>
+              <ScrollView
+                ref={mealScrollRef}
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+                onScroll={(e) => setMealScrollX(e.nativeEvent.contentOffset.x)}
+                scrollEventThrottle={32}
+              >
+                {adminMeals.map((meal) => {
+                  const mealStoredUri = uriMap["meal:" + meal.id];
+                  const image = mealStoredUri ? { uri: mealStoredUri } : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
+                  if (!image) return null;
+                  return (
+                    <Pressable
+                      key={meal.id}
+                      style={styles.inspirationCard}
+                      onPress={() => setSelectedMeal(meal)}
+                    >
+                      <Image source={image} style={styles.inspirationImage} contentFit="cover" />
+                      <LinearGradient
+                        colors={["transparent", "rgba(20,24,16,0.72)"]}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <View style={styles.inspirationTextWrap}>
+                        <Text style={styles.inspirationLabel}>{meal.name}</Text>
+                        <View style={styles.inspirationCta}>
+                          <Text style={styles.inspirationCtaText}>See recipe</Text>
+                          <Ionicons name="arrow-forward" size={10} color="rgba(255,255,255,0.9)" />
+                        </View>
                       </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              {mealScrollX > 10 && (
+                <Pressable
+                  style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => scrollMeals("left")}
+                >
+                  <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+                </Pressable>
+              )}
+              {adminMeals.length > 1 && (
+                <Pressable
+                  style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => scrollMeals("right")}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+                </Pressable>
+              )}
+            </View>
           </View>
         )}
 
@@ -519,7 +557,7 @@ export default function HomeScreen() {
         <Pressable style={styles.modalOverlay} onPress={() => setShowAllBaskets(false)} />
         <Animated.View
           entering={FadeInDown.duration(300)}
-          style={[styles.modalSheet, { backgroundColor: colors.background }]}
+          style={[styles.modalSheet, { backgroundColor: colors.background, maxHeight: "88%" }]}
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>
@@ -528,14 +566,79 @@ export default function HomeScreen() {
           <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>
             {HOME_SECTIONS.baskets.subtitle(experience.name).toUpperCase()}
           </Text>
-          <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop: 4 }}>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginTop: 4 }}>
             {adminBaskets.map((basket) => (
               <View key={basket.id} style={[styles.basketListItem, { borderColor: colors.border }]}>
                 <BasketCard basket={basket} />
               </View>
             ))}
-            <View style={{ height: 24 }} />
+            <View style={{ height: 40 }} />
           </ScrollView>
+        </Animated.View>
+      </Modal>
+
+      {/* All Meals Modal */}
+      <Modal visible={showAllMeals} animationType="slide" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowAllMeals(false)} />
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[styles.modalSheet, { backgroundColor: colors.background, maxHeight: "88%" }]}
+        >
+          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>Meal Inspiration</Text>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginTop: 4 }}>
+            {adminMeals.map((meal) => {
+              const mealStoredUri = uriMap["meal:" + meal.id];
+              const image = mealStoredUri ? { uri: mealStoredUri } : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
+              if (!image) return null;
+              return (
+                <Pressable
+                  key={meal.id}
+                  style={[styles.mealListItem, { borderBottomColor: colors.border }]}
+                  onPress={() => { setShowAllMeals(false); setSelectedMeal(meal); }}
+                >
+                  <Image source={image} style={styles.mealListThumb} contentFit="cover" />
+                  <View style={{ flex: 1, paddingLeft: 14 }}>
+                    <Text style={[styles.name, { color: colors.foreground, fontSize: 15 }]} numberOfLines={1}>{meal.name}</Text>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 3, lineHeight: 18 }} numberOfLines={2}>{meal.description}</Text>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 5 }}>{meal.prepTime} prep · {meal.cookTime} cook</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              );
+            })}
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </Animated.View>
+      </Modal>
+
+      {/* Ready Food Coming Soon Modal */}
+      <Modal visible={showReadyFood} animationType="slide" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowReadyFood(false)} />
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[styles.modalSheet, { backgroundColor: colors.background }]}
+        >
+          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <Image
+            source={require("@/assets/images/lifestyle-spices.png")}
+            style={styles.readyFoodHero}
+            contentFit="cover"
+            blurRadius={18}
+          />
+          <View style={[styles.readyFoodBadge, { backgroundColor: colors.primary }]}>
+            <Text style={styles.readyFoodBadgeText}>Coming Soon</Text>
+          </View>
+          <Text style={[styles.modalTitle, { color: colors.foreground, marginTop: 4 }]}>Ready Food</Text>
+          <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22 }}>
+            Authentic African meals from trusted restaurants. We are building partnerships with African restaurants across the UAE to bring you fresh, authentic food from home.
+          </Text>
+          <Pressable
+            style={[styles.readyFoodBtn, { backgroundColor: colors.primary }]}
+            onPress={() => setShowReadyFood(false)}
+          >
+            <Text style={styles.readyFoodBtnText}>Got It</Text>
+          </Pressable>
         </Animated.View>
       </Modal>
 
@@ -796,6 +899,49 @@ const styles = StyleSheet.create({
   basketArrowLeft: { left: 6 },
   basketArrowRight: { right: 6 },
   basketListItem: { marginBottom: 14 },
+  mealListItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  mealListThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    flexShrink: 0,
+  },
+  name: { fontSize: 18, fontWeight: "800", letterSpacing: -0.5 },
+  readyFoodHero: {
+    width: "100%",
+    height: 160,
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  readyFoodBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  readyFoodBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  readyFoodBtn: {
+    borderRadius: 14,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 18,
+  },
+  readyFoodBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 15,
+  },
   categoriesSection: { marginBottom: 26 },
   categoriesScroll: { paddingHorizontal: 22, gap: 8 },
   categoryChip: {

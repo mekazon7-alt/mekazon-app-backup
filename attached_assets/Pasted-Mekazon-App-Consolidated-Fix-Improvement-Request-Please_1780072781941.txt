@@ -1,0 +1,252 @@
+Mekazon App – Consolidated Fix & Improvement Request
+
+Please review and implement the following fixes and improvements for the Mekazon mobile app.
+
+1. Country Collections Integration
+
+Currently, the country experience is visible in the app but is not properly connected to Shopify collections.
+
+Please create and connect country-based collections so that each country selection displays products from the correct Shopify collection.
+
+Countries:
+
+Ethiopia
+Kenya
+Uganda
+Other African Countries
+Show Me Everything (no filter)
+
+Goal:
+
+When a customer selects their country, the app should feel personalized and show products, baskets, meal inspirations, and recommendations relevant to that country.
+
+2. Top Category Structure
+
+Please simplify the category chips to focus on the most important categories:
+
+Staples
+Grains
+Spices
+Ready Food
+
+Remove unnecessary categories for now.
+
+3. Ready Food (Coming Soon)
+
+Create a "Ready Food" category.
+
+For now, when customers click it:
+
+Show a Coming Soon page
+Use blurred food imagery
+Show steaming African dishes
+Include messaging such as:
+
+"Coming Soon – Authentic African meals from trusted restaurants."
+
+The purpose is:
+
+Test customer interest
+Prepare future restaurant integrations
+Collect demand before building the feature
+4. Language Options
+
+Add:
+
+English
+Arabic
+Amharic
+Swahili
+Afaan Oromoo (Oromo)
+
+Please make Afaan Oromoo selectable like the other languages.
+
+5. Delivery Information
+
+Update delivery messaging throughout the app:
+
+Dubai:
+
+Same-Day Delivery
+AED 32 Delivery Charge
+
+Rest of UAE:
+
+Next-Day Delivery
+
+Make this visible in appropriate areas of the app.
+
+6. Product Pricing Bug
+
+The prices shown inside:
+
+Made for Ethiopia
+Made for Kenya
+Made for Uganda
+
+appear incorrect.
+
+Please investigate where these prices are coming from.
+
+Requirements:
+
+Pull real Shopify product prices
+Remove any hardcoded/demo prices
+Ensure displayed prices always match Shopify
+7. Meal Inspiration Improvements
+
+Current Meal Inspiration section needs improvements.
+
+Please add:
+
+Horizontal scrolling
+Right navigation arrow
+Left navigation arrow when applicable
+"See All" button
+
+Future-ready structure:
+
+Each meal card should be clickable and eventually support:
+
+Recipe page
+Ingredients list
+Shop ingredients directly
+8. Flag Corrections
+
+The country flags are incorrect.
+
+Please fix:
+
+Ethiopia:
+🇪🇹
+
+Kenya:
+🇰🇪
+
+Uganda:
+🇺🇬
+
+Other African Countries:
+Use:
+
+Africa icon
+OR
+Neutral African graphic
+
+Do not use the Ethiopia flag for Other African Countries.
+
+9. Country Selector
+
+The country selector at the top of the app should:
+
+Display correct flag
+Display correct country name
+Show dropdown arrow
+Persist selected country properly
+10. My Baskets Section Fixes
+
+The My Baskets section needs multiple fixes.
+
+A. Add To Cart Not Working
+
+Currently:
+
+Clicking "+ Add" does not add the basket to the cart.
+
+Please fix:
+
+Add basket contents to cart
+If basket contains multiple products, add all products
+If basket is a Shopify bundle, add bundle product correctly
+
+The button must function like a normal Add To Cart button.
+
+B. Basket Images Not Showing
+
+New baskets are being created but their images are not appearing properly on the front end.
+
+Please fix image loading:
+
+Priority:
+
+Basket image
+Product image
+Collection image
+Fallback image
+
+Never show empty cards.
+
+C. See All Page Not Scrollable
+
+When clicking:
+
+My Baskets → See All
+
+The page opens but cannot scroll properly.
+
+Please fix:
+
+Vertical scrolling
+Infinite/long list support
+Bottom safe area spacing
+Last basket must always be visible
+D. Basket Card Consistency
+
+Every basket card should consistently display:
+
+Basket image
+Basket tag
+Basket title
+Basket subtitle
+Real price
+Working Add button
+E. Basket Pricing
+
+Basket prices should never be hardcoded.
+
+Please pull prices from:
+
+Shopify basket product
+OR
+Basket configuration data source
+
+Ensure pricing stays synchronized with Shopify.
+
+11. Shopify Collection Strategy
+
+Please structure Shopify collections so the app can easily connect to them later.
+
+Suggested collections:
+
+Country Collections:
+
+Ethiopia
+Kenya
+Uganda
+Other African Countries
+
+Main Categories:
+
+Staples
+Grains
+Spices
+Ready Food
+
+This will make filtering much easier and reduce future development work.
+
+12. Final User Experience Goal
+
+The app should create the feeling of:
+
+"Food from home."
+
+When a user selects Ethiopia, Kenya, or Uganda:
+
+Products feel familiar
+Meals feel familiar
+Baskets feel familiar
+Language feels familiar
+
+The experience should be emotional, personal, and highly relevant to each diaspora community while still running from a single Shopify backend.
+
+Please implement all fixes above and verify that every section is pulling live data correctly rather than demo or hardcoded values.

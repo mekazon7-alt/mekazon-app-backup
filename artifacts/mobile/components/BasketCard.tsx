@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -11,6 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import type { Basket } from "@/constants/personalization";
+import { useCart } from "@/context/CartContext";
 import { useImageStore } from "@/context/ImageStoreContext";
 
 const LIFESTYLE_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -32,6 +33,9 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function BasketCard({ basket }: BasketCardProps) {
   const scale = useSharedValue(1);
   const { uriMap } = useImageStore();
+  const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
+
   const storedUri = uriMap["basket:" + basket.id];
   const lifestyleImage = storedUri
     ? { uri: storedUri }
@@ -44,6 +48,22 @@ export function BasketCard({ basket }: BasketCardProps) {
   const handlePress = () => {
     scale.value = withSpring(0.97, {}, () => { scale.value = withSpring(1); });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleAddToCart = () => {
+    addItem({
+      id: basket.id,
+      name: basket.name,
+      description: basket.tagline ?? "",
+      price: basket.price,
+      currency: basket.currency ?? "AED",
+      unit: "basket",
+      cardColor: basket.cardColor ?? "#C8581C",
+      tag: "Basket",
+    });
+    setAdded(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
@@ -71,10 +91,16 @@ export function BasketCard({ basket }: BasketCardProps) {
           <Text style={styles.tagline} numberOfLines={1}>{basket.tagline}</Text>
           <View style={styles.footer}>
             <Text style={styles.price}>AED {basket.price.toFixed(0)}</Text>
-            <View style={styles.addBtn}>
-              <Ionicons name="add" size={14} color="#1E2414" />
-              <Text style={styles.addBtnText}>Add</Text>
-            </View>
+            <Pressable
+              style={[styles.addBtn, added && styles.addBtnAdded]}
+              onPress={(e) => { e.stopPropagation(); handleAddToCart(); }}
+              hitSlop={8}
+            >
+              <Ionicons name={added ? "checkmark" : "add"} size={14} color={added ? "#FFFFFF" : "#1E2414"} />
+              <Text style={[styles.addBtnText, added && styles.addBtnTextAdded]}>
+                {added ? "Added" : "Add"}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -151,9 +177,15 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
   },
+  addBtnAdded: {
+    backgroundColor: "#4A7A32",
+  },
   addBtnText: {
     fontSize: 12,
     fontWeight: "700",
     color: "#1E2414",
+  },
+  addBtnTextAdded: {
+    color: "#FFFFFF",
   },
 });

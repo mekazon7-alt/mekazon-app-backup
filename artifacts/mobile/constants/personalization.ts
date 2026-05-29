@@ -188,7 +188,7 @@ const ETHIOPIA: CountryConfig = {
 const OTHER: CountryConfig = {
   id: "other",
   name: "African Countries",
-  flagColors: ["#009A44", "#FCDD09", "#CC0000"],
+  flagColors: ["#CC0001", "#000000", "#007A47"],
   heroTitle: "Africa's Finest.",
   heroSubtitle: "Every taste of the continent, in one place.",
   nativeGreeting: "Welcome home",
@@ -290,6 +290,6 @@ export const ONBOARDING_OPTIONS: Array<{
   { id: "uganda", name: "Uganda", subtitle: "Matooke, posho, groundnuts, fresh greens", flagColors: ["#000000", "#FFCC00", "#DD0000"], cardImageKey: "lifestyle-matooke" },
   { id: "kenya", name: "Kenya", subtitle: "Ugali, Royco, Kenyan tea, Blue Band", flagColors: ["#006600", "#CC0001", "#000000"], cardImageKey: "lifestyle-ugali" },
   { id: "ethiopia", name: "Ethiopia", subtitle: "Injera, berbere, coffee, shiro", flagColors: ["#009A44", "#FCDD09", "#EF3340"], cardImageKey: "lifestyle-injera" },
-  { id: "other", name: "Other African Countries", subtitle: "Egusi, fufu, jollof, suya, plantain", flagColors: ["#009A44", "#FCDD09", "#CC0000"], cardImageKey: "hero-pan-african" },
+  { id: "other", name: "Other African Countries", subtitle: "Egusi, fufu, jollof, suya, plantain", flagColors: ["#CC0001", "#000000", "#007A47"], cardImageKey: "hero-pan-african" },
   { id: "all", name: "Show Me Everything", subtitle: "All African foods, no filter", flagColors: ["#C8581C", "#C8581C", "#C8581C"], cardImageKey: "hero-pan-african" },
 ];

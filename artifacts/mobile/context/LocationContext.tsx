@@ -17,7 +17,7 @@ export const UAE_EMIRATES: UAE_Emirate[] = [
     name: "Dubai",
     arabicName: "دبي",
     sameDay: true,
-    deliveryMessage: "Same-day delivery available in Dubai",
+    deliveryMessage: "Same-day delivery · AED 32",
   },
   {
     id: "abu-dhabi",

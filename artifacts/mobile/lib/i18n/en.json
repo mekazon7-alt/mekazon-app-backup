@@ -115,5 +115,13 @@
   "languageEnglish": "English",
   "languageArabic": "Arabic",
   "languageAmharic": "Amharic",
-  "languageSwahili": "Swahili"
+  "languageSwahili": "Swahili",
+  "languageOromo": "Afaan Oromoo",
+  "readyFoodTitle": "Ready Food",
+  "readyFoodComingSoon": "Coming Soon",
+  "readyFoodMessage": "Authentic African meals from trusted restaurants. We are building partnerships with African restaurants across the UAE to bring you fresh, authentic food from home.",
+  "readyFoodTagline": "Coming to Mekazon soon.",
+  "readyFoodBtn": "Got It",
+  "deliveryFeeLabel": "Delivery",
+  "seeAllMeals": "See all meals"
 }

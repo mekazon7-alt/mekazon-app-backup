@@ -5,3 +5,6 @@
 - [Auth + OTP system](auth-otp.md) — Phone login with mock OTP (123456); session in AsyncStorage; structured for Twilio/Firebase/Supabase swap; AuthProvider wraps whole tree in _layout.tsx
 - [Order history architecture](order-history.md) — Local-only (AsyncStorage), labeled "Orders started from this app", never "Order confirmed"; cart.tsx passes VAT+delivery to CartContext.shopifyCheckout(extras)
 - [Notification service pattern](notification-service.md) — expo-notifications behind Platform.OS guard; web is graceful no-op; real push requires EAS build + APNs/FCM
+- [AdminCategory type mismatch](admin-category-type.md) — personalization.ts CountryConfig categories are {name,icon}[] with no id/keywords; AppContent AdminCategory[] has both; never mix — always annotate adminCategories explicitly as AdminCategory[]
+- [appContentService save](service-save.md) — internal save() must be exported as saveContent; admin screens call appContentService.saveContent() not setContent()
+- [Basket Add to Cart](basket-add-to-cart.md) — addItem() needs a full Product object; construct from basket.id/name/tagline/price/currency/cardColor with unit:"basket"

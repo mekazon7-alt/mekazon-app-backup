@@ -2,8 +2,9 @@ import en from "./en.json";
 import ar from "./ar.json";
 import am from "./am.json";
 import sw from "./sw.json";
+import om from "./om.json";
 
-export type SupportedLanguage = "en" | "ar" | "am" | "sw";
+export type SupportedLanguage = "en" | "ar" | "am" | "sw" | "om";
 
 export const LANGUAGE_META: Record<
   SupportedLanguage,
@@ -13,6 +14,7 @@ export const LANGUAGE_META: Record<
   ar: { label: "Arabic", nativeLabel: "العربية", rtl: true, flag: "🇦🇪" },
   am: { label: "Amharic", nativeLabel: "አማርኛ", rtl: false, flag: "🇪🇹" },
   sw: { label: "Swahili", nativeLabel: "Swahili", rtl: false, flag: "🇰🇪" },
+  om: { label: "Afaan Oromoo", nativeLabel: "Afaan Oromoo", rtl: false, flag: "🇪🇹" },
 };
 
 export const COUNTRY_SUGGESTED_LANGUAGE: Record<string, SupportedLanguage> = {
@@ -28,6 +30,7 @@ const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   ar,
   am,
   sw,
+  om,
 };
 
 export function t(

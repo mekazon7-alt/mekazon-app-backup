@@ -1,1 +1,4 @@
 - [UX audit & persona fixes](ux-audit-fixes.md) — full list of bugs found + fixed in UX audit and 4-persona cultural review
+- [Cart-checkout-clears](cart-checkout-clears.md) — cart must be cleared (setItems([])) inside shopifyCheckout after saveOrder, not via clearCart callback
+- [Basket-detail-sheet](basket-detail-sheet.md) — BasketCard tap opens a detail Modal (items list + Add to Cart); baskets have items: string[] in personalization.ts
+- [Pre-existing TS errors](preexisting-ts-errors.md) — four ignored errors: onboarding.tsx, useColors.ts, mock-data.ts, index.tsx heroImg cast

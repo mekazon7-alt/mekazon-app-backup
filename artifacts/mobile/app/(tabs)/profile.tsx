@@ -337,6 +337,17 @@ export default function ProfileScreen() {
           Your orders and payments are handled securely through mekazon.com
         </Text>
 
+        {/* Legal links */}
+        <View style={styles.legalRow}>
+          <Pressable onPress={() => Linking.openURL("https://www.mekazon.com/privacy")}>
+            <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Privacy Policy</Text>
+          </Pressable>
+          <View style={[styles.legalDot, { backgroundColor: colors.border }]} />
+          <Pressable onPress={() => Linking.openURL("https://www.mekazon.com/terms")}>
+            <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Terms of Use</Text>
+          </Pressable>
+        </View>
+
         {/* Hidden version — tapping 5 times opens admin login */}
         <Pressable onPress={handleVersionTap} style={styles.versionWrap}>
           <Text style={[styles.versionText, { color: colors.mutedForeground }]}>
@@ -549,6 +560,9 @@ const styles = StyleSheet.create({
   menuRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, borderBottomWidth: 1 },
   menuLabel: { flex: 1, fontSize: 15, fontWeight: "500" },
   shopifyNote: { fontSize: 11, textAlign: "center", paddingHorizontal: 24, paddingBottom: 8, lineHeight: 17 },
+  legalRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 8 },
+  legalLink: { fontSize: 12, fontWeight: "500" },
+  legalDot: { width: 3, height: 3, borderRadius: 1.5 },
   versionWrap: { alignItems: "center", paddingVertical: 14, paddingBottom: 4, gap: 4 },
   versionText: { fontSize: 12, fontWeight: "500" },
   versionHint: { fontSize: 11, opacity: 0.7 },

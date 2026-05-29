@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Linking } from "react-native";
+import { router } from "expo-router";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Alert,
@@ -197,6 +198,13 @@ export default function OrdersScreen() {
           <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
             {t("ordersEmptySubtitle")}
           </Text>
+          <Pressable
+            style={[styles.emptyCtaBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.push("/(tabs)/search")}
+          >
+            <Ionicons name="storefront-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.emptyCtaText}>Start Shopping</Text>
+          </Pressable>
         </View>
       ) : (
         <FlatList
@@ -244,6 +252,8 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 20, fontWeight: "700" },
   emptySubtitle: { fontSize: 14, textAlign: "center", paddingHorizontal: 40, lineHeight: 21 },
+  emptyCtaBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 14, marginTop: 8 },
+  emptyCtaText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
   orderCard: {
     borderRadius: 18,
     borderWidth: 1,

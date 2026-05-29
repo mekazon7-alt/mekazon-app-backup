@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -114,6 +115,13 @@ export default function CartScreen() {
           <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
             {t("cartEmptySubtitle")}
           </Text>
+          <Pressable
+            style={[styles.emptyCtaBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.push("/(tabs)/search")}
+          >
+            <Ionicons name="storefront-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.emptyCtaText}>Browse Products</Text>
+          </Pressable>
         </View>
       ) : (
         <>
@@ -312,6 +320,8 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 20, fontWeight: "700" },
   emptySubtitle: { fontSize: 14, textAlign: "center", paddingHorizontal: 40 },
+  emptyCtaBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 14, marginTop: 8 },
+  emptyCtaText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
   separator: { height: 1, marginVertical: 2 },
   cartItem: {
     flexDirection: "row",

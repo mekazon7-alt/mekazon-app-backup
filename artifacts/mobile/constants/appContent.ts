@@ -35,32 +35,32 @@ export const HERO_COPY: Record<
   uganda: {
     title: "Your home basket\nis ready.",
     tagline: "Food that feels like home.",
-    buyAgainLabel: "Buy Again",
-    exploreLabel: "Explore",
+    buyAgainLabel: "Shop Now",
+    exploreLabel: "My Orders",
   },
   kenya: {
     title: "Taste of Nairobi,\nin the Gulf.",
     tagline: "Everything you crave, delivered.",
-    buyAgainLabel: "Buy Again",
-    exploreLabel: "Explore",
+    buyAgainLabel: "Shop Now",
+    exploreLabel: "My Orders",
   },
   ethiopia: {
     title: "Ye ina bet\nt'aam is here.",
     tagline: "Authentic. Sourced. Delivered.",
-    buyAgainLabel: "Buy Again",
-    exploreLabel: "Explore",
+    buyAgainLabel: "Shop Now",
+    exploreLabel: "My Orders",
   },
   other: {
     title: "West Africa\nin the UAE.",
     tagline: "Your favourites, close to home.",
-    buyAgainLabel: "Buy Again",
-    exploreLabel: "Explore",
+    buyAgainLabel: "Shop Now",
+    exploreLabel: "My Orders",
   },
   all: {
     title: "One app.\nEvery African kitchen.",
     tagline: "The whole continent, delivered.",
-    buyAgainLabel: "Buy Again",
-    exploreLabel: "Explore",
+    buyAgainLabel: "Shop Now",
+    exploreLabel: "My Orders",
   },
 };
 

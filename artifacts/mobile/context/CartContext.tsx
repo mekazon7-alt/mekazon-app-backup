@@ -123,6 +123,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         status: "sent_to_shopify",
       };
       await saveOrder(order);
+      setItems([]);
 
       await AsyncStorage.removeItem(CART_ID_KEY);
       await Linking.openURL(checkoutUrl);

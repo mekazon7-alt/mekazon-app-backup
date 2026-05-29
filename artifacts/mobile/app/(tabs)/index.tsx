@@ -277,19 +277,19 @@ export default function HomeScreen() {
             <View style={styles.heroButtons}>
               <Pressable
                 style={[styles.heroBtnPrimary, { backgroundColor: colors.primary }]}
-                onPress={() => router.push("/(tabs)/orders")}
+                onPress={() => router.push("/(tabs)/search")}
               >
-                <Ionicons name="refresh" size={14} color="#FFFFFF" />
+                <Ionicons name="storefront-outline" size={14} color="#FFFFFF" />
                 <Text style={styles.heroBtnPrimaryText}>
-                  {HERO_COPY[homeCountry ?? "all"]?.buyAgainLabel ?? "Buy Again"}
+                  {HERO_COPY[homeCountry ?? "all"]?.buyAgainLabel ?? "Shop Now"}
                 </Text>
               </Pressable>
               <Pressable
                 style={[styles.heroBtnSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => router.push("/(tabs)/search")}
+                onPress={() => router.push("/(tabs)/orders")}
               >
                 <Text style={[styles.heroBtnSecondaryText, { color: colors.foreground }]}>
-                  {HERO_COPY[homeCountry ?? "all"]?.exploreLabel ?? "Explore"}
+                  {HERO_COPY[homeCountry ?? "all"]?.exploreLabel ?? "My Orders"}
                 </Text>
                 <Ionicons name="arrow-forward" size={13} color={colors.foreground} />
               </Pressable>
@@ -714,7 +714,7 @@ export default function HomeScreen() {
       {/* Ready Food Coming Soon Modal */}
       {(() => {
         const READY_FOOD_IMAGES: Record<string, ReturnType<typeof require>> = {
-          uganda:   require("@/assets/images/lifestyle-ugali.png"),
+          uganda:   require("@/assets/images/lifestyle-matooke.png"),
           kenya:    require("@/assets/images/lifestyle-ugali.png"),
           ethiopia: require("@/assets/images/lifestyle-injera.png"),
           other:    require("@/assets/images/lifestyle-spices.png"),

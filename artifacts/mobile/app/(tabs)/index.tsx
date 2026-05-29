@@ -309,60 +309,45 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Categories */}
+        {/* Categories — flex-wrap so all chips are always fully visible, no cut-off */}
         {adminCategories.length > 0 && (
           <View style={styles.categoriesSection}>
-            <View style={styles.categoryRowWrap}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoriesScroll}
-              >
-                {adminCategories.map((cat) => {
-                  const isActive = cat.name === activeCat;
-                  return (
-                    <Pressable
-                      key={cat.id}
+            <View style={styles.categoriesWrap}>
+              {adminCategories.map((cat) => {
+                const isActive = cat.name === activeCat;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    style={[
+                      styles.categoryChip,
+                      isActive
+                        ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                        : { backgroundColor: colors.card, borderColor: colors.border },
+                    ]}
+                    onPress={() => {
+                      if (cat.name === "Ready Food") { setShowReadyFood(true); return; }
+                      setSelectedCategory(isActive ? "" : cat.name);
+                    }}
+                  >
+                    <Ionicons
+                      name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
+                      size={13}
+                      color={isActive ? "#FFFFFF" : colors.primary}
+                    />
+                    <Text
                       style={[
-                        styles.categoryChip,
-                        isActive
-                          ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                          : { backgroundColor: colors.card, borderColor: colors.border },
+                        styles.categoryText,
+                        { color: isActive ? "#FFFFFF" : colors.foreground },
                       ]}
-                      onPress={() => {
-                        if (cat.name === "Ready Food") { setShowReadyFood(true); return; }
-                        setSelectedCategory(isActive ? "" : cat.name);
-                      }}
                     >
-                      <Ionicons
-                        name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
-                        size={14}
-                        color={isActive ? "#FFFFFF" : colors.primary}
-                      />
-                      <Text
-                        style={[
-                          styles.categoryText,
-                          { color: isActive ? "#FFFFFF" : colors.foreground },
-                        ]}
-                      >
-                        {cat.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              {adminCategories.length > 2 && (
-                <LinearGradient
-                  colors={[`${colors.background}00`, colors.background]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.categoryFade}
-                  pointerEvents="none"
-                />
-              )}
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
             {collectionLoading && (
-              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 4, marginLeft: 4 }} />
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 6, marginLeft: 22 }} />
             )}
           </View>
         )}
@@ -722,34 +707,65 @@ export default function HomeScreen() {
       </Modal>
 
       {/* Ready Food Coming Soon Modal */}
-      <Modal visible={showReadyFood} animationType="slide" transparent>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowReadyFood(false)} />
-        <Animated.View
-          entering={FadeInDown.duration(300)}
-          style={[styles.modalSheet, { backgroundColor: colors.background }]}
-        >
-          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-          <Image
-            source={require("@/assets/images/lifestyle-spices.png")}
-            style={styles.readyFoodHero}
-            contentFit="cover"
-            blurRadius={18}
-          />
-          <View style={[styles.readyFoodBadge, { backgroundColor: colors.primary }]}>
-            <Text style={styles.readyFoodBadgeText}>Coming Soon</Text>
-          </View>
-          <Text style={[styles.modalTitle, { color: colors.foreground, marginTop: 4 }]}>Ready Food</Text>
-          <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22 }}>
-            Authentic African meals from trusted restaurants. We are building partnerships with African restaurants across the UAE to bring you fresh, authentic food from home.
-          </Text>
-          <Pressable
-            style={[styles.readyFoodBtn, { backgroundColor: colors.primary }]}
-            onPress={() => setShowReadyFood(false)}
-          >
-            <Text style={styles.readyFoodBtnText}>Got It</Text>
-          </Pressable>
-        </Animated.View>
-      </Modal>
+      {(() => {
+        const READY_FOOD_IMAGES: Record<string, ReturnType<typeof require>> = {
+          uganda:   require("@/assets/images/lifestyle-ugali.png"),
+          kenya:    require("@/assets/images/lifestyle-ugali.png"),
+          ethiopia: require("@/assets/images/lifestyle-injera.png"),
+          other:    require("@/assets/images/lifestyle-spices.png"),
+          all:      require("@/assets/images/lifestyle-spices.png"),
+        };
+        const READY_FOOD_COPY: Record<string, { dish: string; teaser: string }> = {
+          uganda:   { dish: "Rolex, Matoke & More", teaser: "Ugandan street food and home-cooked favourites, fresh from partner kitchens." },
+          kenya:    { dish: "Nyama Choma, Ugali & More", teaser: "Nairobi favourites cooked fresh and delivered to your door." },
+          ethiopia: { dish: "Injera, Tibs & More", teaser: "Authentic Ethiopian platters from trusted restaurant partners in the UAE." },
+          other:    { dish: "Jollof, Suya & More", teaser: "West and Central African cuisine from partner restaurants across the UAE." },
+          all:      { dish: "African Kitchen Coming Soon", teaser: "Fresh, authentic African meals from partner restaurants — delivered." },
+        };
+        const key = homeCountry ?? "all";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const heroImg: any = READY_FOOD_IMAGES[key] ?? READY_FOOD_IMAGES.all;
+        const copy = READY_FOOD_COPY[key] ?? READY_FOOD_COPY.all;
+        return (
+          <Modal visible={showReadyFood} animationType="slide" transparent>
+            <Pressable style={styles.modalOverlay} onPress={() => setShowReadyFood(false)} />
+            <Animated.View
+              entering={FadeInDown.duration(300)}
+              style={[styles.modalSheet, { backgroundColor: colors.background }]}
+            >
+              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+              {/* Food image — clear, steamy, appetising — "Coming Soon" overlaid in corner */}
+              <View style={styles.readyFoodHeroWrap}>
+                <Image
+                  source={heroImg}
+                  style={styles.readyFoodHero}
+                  contentFit="cover"
+                />
+                <LinearGradient
+                  colors={["transparent", "rgba(15,18,10,0.55)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.readyFoodComingSoonBadge}>
+                  <Text style={styles.readyFoodComingSoonText}>Coming Soon</Text>
+                </View>
+              </View>
+              <Text style={[styles.readyFoodDish, { color: colors.foreground }]}>{copy.dish}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginTop: 6 }}>
+                {copy.teaser}
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 20, marginTop: 10 }}>
+                We are building partnerships with African restaurants across the UAE. Be the first to know when it launches.
+              </Text>
+              <Pressable
+                style={[styles.readyFoodBtn, { backgroundColor: colors.primary }]}
+                onPress={() => setShowReadyFood(false)}
+              >
+                <Text style={styles.readyFoodBtnText}>Got It</Text>
+              </Pressable>
+            </Animated.View>
+          </Modal>
+        );
+      })()}
 
       {/* Meal Recipe Modal */}
       <Modal visible={!!selectedMeal} animationType="slide" transparent>
@@ -1021,24 +1037,36 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   name: { fontSize: 18, fontWeight: "800", letterSpacing: -0.5 },
+  readyFoodHeroWrap: {
+    width: "100%",
+    height: 200,
+    borderRadius: 18,
+    overflow: "hidden",
+    marginBottom: 16,
+  },
   readyFoodHero: {
     width: "100%",
-    height: 160,
-    borderRadius: 16,
-    marginBottom: 14,
+    height: "100%",
   },
-  readyFoodBadge: {
-    alignSelf: "flex-start",
+  readyFoodComingSoonBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(200, 88, 28, 0.92)",
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    marginBottom: 10,
   },
-  readyFoodBadgeText: {
+  readyFoodComingSoonText: {
     color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.5,
+  },
+  readyFoodDish: {
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.4,
   },
   readyFoodBtn: {
     borderRadius: 14,
@@ -1052,25 +1080,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   categoriesSection: { marginBottom: 26 },
-  categoryRowWrap: { position: "relative" },
-  categoryFade: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 48,
+  categoriesWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 22,
+    gap: 8,
   },
-  categoriesScroll: { paddingHorizontal: 22, gap: 8, paddingRight: 40 },
   categoryChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 24,
     borderWidth: 1,
   },
-  categoryText: { fontSize: 13, fontWeight: "600" },
+  categoryText: { fontSize: 12, fontWeight: "600" },
   section: { marginBottom: 32 },
   horizontalScroll: { paddingHorizontal: 22, paddingBottom: 4 },
   inspirationCard: {

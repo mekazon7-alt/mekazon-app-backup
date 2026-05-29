@@ -61,8 +61,11 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
   const getCategoriesForCountry = useCallback(
     (country: HomeCountry): AdminCategory[] => {
       if (!data) return [];
+      // Strict match — only return categories for this specific country.
+      // "all" categories are shown only when homeCountry === "all" (Show Everything).
+      // This prevents doubles when country-specific + "all" share the same category name.
       return data.categories
-        .filter((c) => c.active && (c.country === country || c.country === "all"))
+        .filter((c) => c.active && c.country === country)
         .sort((a, b) => a.order - b.order);
     },
     [data]

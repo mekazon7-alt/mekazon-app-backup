@@ -50,7 +50,7 @@ export const appContentService = {
   async getCategoriesForCountry(country: HomeCountry): Promise<AdminCategory[]> {
     const c = await load();
     return c.categories
-      .filter((cat) => cat.active && (cat.country === country || cat.country === "all"))
+      .filter((cat) => cat.active && cat.country === country)
       .sort((a, b) => a.order - b.order);
   },
 

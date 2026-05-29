@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -28,7 +28,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
 import { useAppContent } from "@/context/AppContentContext";
 import { useImageStore } from "@/context/ImageStoreContext";
-import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
+import { getProductsByCollectionHandle } from "@/services/shopify/client";
+import { shopifyProductsToProducts } from "@/services/shopify/transforms";
+import { ONBOARDING_OPTIONS, type HomeCountry, type Product } from "@/constants/personalization";
 import { LANGUAGE_META, COUNTRY_SUGGESTED_LANGUAGE, type SupportedLanguage } from "@/lib/i18n";
 import { HERO_COPY, HOME_SECTIONS, TRUST_ITEMS } from "@/constants/appContent";
 import type { AdminMeal, AdminCategory } from "@/types/appContent";
@@ -85,6 +87,10 @@ export default function HomeScreen() {
   const [madeForScrollX, setMadeForScrollX] = useState(0);
   const madeForScrollRef = useRef<ScrollViewType>(null);
 
+  // When a category has a shopifyCollectionHandle, fetch from that specific collection
+  const [collectionProducts, setCollectionProducts] = useState<Product[] | null>(null);
+  const [collectionLoading, setCollectionLoading] = useState(false);
+
   const adminBaskets = homeCountry ? getBasketsForCountry(homeCountry) : (experience?.baskets ?? []);
   const adminMeals = homeCountry ? getMealsForCountry(homeCountry) : [];
   const adminCategories: AdminCategory[] = homeCountry ? getCategoriesForCountry(homeCountry) : [];
@@ -127,7 +133,33 @@ export default function HomeScreen() {
   const firstCat = adminCategories[0]?.name ?? "";
   const activeCat = selectedCategory || firstCat;
 
+  // If the active category has a Shopify collection handle, fetch from that collection.
+  // This lets each country's "Staples" (or any category) point to a different Shopify collection.
+  useEffect(() => {
+    const catObj = adminCategories.find((c) => c.name === activeCat);
+    const handle = catObj?.shopifyCollectionHandle;
+    if (!handle) {
+      setCollectionProducts(null);
+      return;
+    }
+    let cancelled = false;
+    setCollectionLoading(true);
+    getProductsByCollectionHandle(handle, { first: 24 })
+      .then((nodes) => {
+        if (!cancelled) setCollectionProducts(shopifyProductsToProducts(nodes));
+      })
+      .catch(() => {
+        if (!cancelled) setCollectionProducts(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCollectionLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeCat, adminCategories]);
+
   const filteredProducts = useMemo(() => {
+    // If a Shopify collection was fetched for this category, use those products directly
+    if (collectionProducts !== null) return collectionProducts;
     if (!activeCat || activeCat === firstCat) return shopifyProducts;
     const catObj = adminCategories.find((c) => c.name === activeCat);
     const keywords = catObj?.keywords ?? [];
@@ -140,7 +172,7 @@ export default function HomeScreen() {
           p.description.toLowerCase().includes(kw)
       )
     );
-  }, [activeCat, firstCat, shopifyProducts, adminCategories]);
+  }, [activeCat, firstCat, shopifyProducts, adminCategories, collectionProducts]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -280,44 +312,58 @@ export default function HomeScreen() {
         {/* Categories */}
         {adminCategories.length > 0 && (
           <View style={styles.categoriesSection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoriesScroll}
-            >
-              {adminCategories.map((cat) => {
-                const isActive = cat.name === activeCat;
-                return (
-                  <Pressable
-                    key={cat.id}
-                    style={[
-                      styles.categoryChip,
-                      isActive
-                        ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                        : { backgroundColor: colors.card, borderColor: colors.border },
-                    ]}
-                    onPress={() => {
-                      if (cat.name === "Ready Food") { setShowReadyFood(true); return; }
-                      setSelectedCategory(isActive ? "" : cat.name);
-                    }}
-                  >
-                    <Ionicons
-                      name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
-                      size={14}
-                      color={isActive ? "#FFFFFF" : colors.primary}
-                    />
-                    <Text
+            <View style={styles.categoryRowWrap}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoriesScroll}
+              >
+                {adminCategories.map((cat) => {
+                  const isActive = cat.name === activeCat;
+                  return (
+                    <Pressable
+                      key={cat.id}
                       style={[
-                        styles.categoryText,
-                        { color: isActive ? "#FFFFFF" : colors.foreground },
+                        styles.categoryChip,
+                        isActive
+                          ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                          : { backgroundColor: colors.card, borderColor: colors.border },
                       ]}
+                      onPress={() => {
+                        if (cat.name === "Ready Food") { setShowReadyFood(true); return; }
+                        setSelectedCategory(isActive ? "" : cat.name);
+                      }}
                     >
-                      {cat.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+                      <Ionicons
+                        name={CATEGORY_ICONS[cat.icon] ?? "grid-outline"}
+                        size={14}
+                        color={isActive ? "#FFFFFF" : colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.categoryText,
+                          { color: isActive ? "#FFFFFF" : colors.foreground },
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              {adminCategories.length > 2 && (
+                <LinearGradient
+                  colors={[`${colors.background}00`, colors.background]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.categoryFade}
+                  pointerEvents="none"
+                />
+              )}
+            </View>
+            {collectionLoading && (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 4, marginLeft: 4 }} />
+            )}
           </View>
         )}
 
@@ -1006,7 +1052,15 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   categoriesSection: { marginBottom: 26 },
-  categoriesScroll: { paddingHorizontal: 22, gap: 8 },
+  categoryRowWrap: { position: "relative" },
+  categoryFade: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 48,
+  },
+  categoriesScroll: { paddingHorizontal: 22, gap: 8, paddingRight: 40 },
   categoryChip: {
     flexDirection: "row",
     alignItems: "center",

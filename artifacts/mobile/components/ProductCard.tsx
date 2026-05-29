@@ -12,6 +12,7 @@ import Animated, {
 import { useColors } from "@/hooks/useColors";
 import type { Product } from "@/constants/personalization";
 import { useCart } from "@/context/CartContext";
+import { USE_MOCK } from "@/services/shopify/client";
 
 const PRODUCT_IMAGES: Record<string, ReturnType<typeof require>> = {
   "product-royco": require("@/assets/images/product-royco.png"),
@@ -92,6 +93,11 @@ export function ProductCard({ product, cardStyle }: ProductCardProps) {
             <Text style={[styles.tagText, { color: colors.accentForeground }]}>{product.tag}</Text>
           </View>
         ) : null}
+        {USE_MOCK && (
+          <View style={styles.demoBadge}>
+            <Text style={styles.demoBadgeText}>Demo</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.info}>
@@ -100,12 +106,20 @@ export function ProductCard({ product, cardStyle }: ProductCardProps) {
         </Text>
         <Text style={[styles.unit, { color: colors.mutedForeground }]}>{product.unit}</Text>
         <View style={styles.bottom}>
-          <View>
-            <Text style={[styles.currency, { color: colors.mutedForeground }]}>AED</Text>
-            <Text style={[styles.price, { color: colors.foreground }]}>
-              {product.price.toFixed(0)}
-            </Text>
-          </View>
+          {USE_MOCK ? (
+            <View style={styles.mockPriceWrap}>
+              <Text style={[styles.mockPriceLabel, { color: colors.mutedForeground }]}>
+                Connect Shopify
+              </Text>
+            </View>
+          ) : (
+            <View>
+              <Text style={[styles.currency, { color: colors.mutedForeground }]}>AED</Text>
+              <Text style={[styles.price, { color: colors.foreground }]}>
+                {product.price.toFixed(0)}
+              </Text>
+            </View>
+          )}
           <Pressable
             style={[
               styles.addBtn,
@@ -203,6 +217,30 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "800",
     letterSpacing: -0.4,
+  },
+  demoBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(200, 88, 28, 0.88)",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  demoBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+  },
+  mockPriceWrap: {
+    justifyContent: "flex-end",
+    paddingBottom: 2,
+  },
+  mockPriceLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: -0.1,
   },
   addBtn: {
     width: 32,

@@ -1,7 +1,7 @@
 import type { AppContentData } from "@/types/appContent";
 
 export const DEFAULT_APP_CONTENT: AppContentData = {
-  version: 1,
+  version: 2,
   heroes: [
     { country: "uganda", title: "Ebyo eby'ewaka.", tagline: "Tastes of home, delivered to you in the UAE.", imageKey: "hero-uganda" },
     { country: "kenya", title: "Ladha ya nyumbani.", tagline: "The flavors of home, wherever you are.", imageKey: "hero-kenya" },

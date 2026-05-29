@@ -10,7 +10,7 @@ const SHOPIFY_STORE_DOMAIN =
 const SHOPIFY_STOREFRONT_TOKEN =
   (process.env.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN as string | undefined) ?? "";
 
-const USE_MOCK = !SHOPIFY_STORE_DOMAIN || !SHOPIFY_STOREFRONT_TOKEN;
+export const USE_MOCK = !SHOPIFY_STORE_DOMAIN || !SHOPIFY_STOREFRONT_TOKEN;
 
 async function storefrontFetch<T>(
   query: string,

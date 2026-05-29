@@ -5,10 +5,16 @@ import { DEFAULT_APP_CONTENT } from "./defaultContent";
 
 const STORAGE_KEY = "@mekazon_admin_content";
 
+const CURRENT_VERSION = DEFAULT_APP_CONTENT.version;
+
 async function load(): Promise<AppContentData> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as AppContentData;
+    if (stored) {
+      const parsed = JSON.parse(stored) as AppContentData;
+      if ((parsed.version ?? 0) >= CURRENT_VERSION) return parsed;
+      // Version mismatch — reset to defaults so stale category names don't persist
+    }
   } catch {
     // fall through to defaults
   }

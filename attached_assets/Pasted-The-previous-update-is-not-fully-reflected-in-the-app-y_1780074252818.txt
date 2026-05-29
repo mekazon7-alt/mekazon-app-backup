@@ -1,0 +1,123 @@
+The previous update is not fully reflected in the app yet. Please fix these specific issues.
+
+1. “Made for Ethiopia” prices are still wrong
+   The prices are still showing AED 32, AED 37, AED 25, etc. Please confirm whether this section is using mock data or Shopify data.
+
+If Shopify env vars are missing, do not silently show mock prices as if they are real. Instead:
+
+* show “Connect Shopify price”
+  OR
+* clearly label it as demo data in development
+
+The final app must pull real Shopify prices only.
+
+2. Country/category chips are still not correct
+   The top chips are still showing mixed items like:
+
+* Grains
+* Uganda
+* Spices
+* Kenya
+
+This is confusing because countries and categories are mixed together.
+
+Please separate them clearly:
+
+Country selector:
+
+* Ethiopia
+* Kenya
+* Uganda
+* Other African Countries
+* Show Everything
+
+Category chips:
+
+* Staples
+* Grains
+* Spices
+* Ready Food
+
+Do not mix countries and categories in the same horizontal chip row.
+
+3. Admin category setup should allow same category name for multiple countries
+   In the admin screen, I should be able to create the same category for different countries.
+
+Example:
+
+* Staples for Ethiopia
+* Staples for Kenya
+* Staples for Uganda
+
+But each one should have different products/keywords/Shopify collection handle.
+
+So category uniqueness should not be based only on category name. It should be based on:
+
+country + category name
+
+Example:
+
+* Ethiopia / Staples
+* Kenya / Staples
+* Uganda / Staples
+
+Each category-country combination should support its own:
+
+* keywords
+* Shopify collection handle
+* image if needed
+* active/inactive status
+
+4. Country selector in admin is not scrollable
+   In the category creation/edit screen, the country chips are cut off horizontally. I cannot reach all countries properly.
+
+Please make the country chip row horizontally scrollable or show it in a cleaner dropdown/list format.
+
+5. Rule for every horizontal section in the app
+   Anywhere the app uses horizontal scrolling, it must clearly show that more content exists.
+
+Please apply this rule globally.
+
+For every horizontal row/slider/carousel:
+
+* show partial next card peeking in
+  OR
+* add right arrow
+  OR
+* add “See all”
+  OR
+* combine arrow + See all for important sections
+
+This applies to:
+
+* category chips
+* country chips
+* Made for country product rows
+* My Baskets
+* Meal Inspiration
+* admin country selector
+* any future horizontal row
+
+6. Made for country product rows
+   The “Made for Ethiopia / Kenya / Uganda” rows should have:
+
+* working horizontal scroll
+* right arrow
+* left arrow when applicable
+* See all button
+* real Shopify products
+* real Shopify prices
+* correct country-based collection/filter
+
+7. Please verify after fixing
+   After implementation, please confirm section-by-section:
+
+* Top country selector: fixed or not
+* Category chips: fixed or not
+* Made for Ethiopia: Shopify/live or mock
+* Prices: Shopify/live or mock
+* Admin category creation: supports same category across multiple countries or not
+* Admin country selector: scrollable or not
+* Horizontal rows: arrows/see all/peek applied or not
+
+The goal is not only visual change. The app logic must work correctly.

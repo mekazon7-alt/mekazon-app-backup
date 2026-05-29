@@ -550,17 +550,15 @@ function PickerField({ label, value, options, labels, onChange }: {
   return (
     <View style={styles.fieldWrap}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {options.map((opt, i) => (
-            <Pressable key={opt} style={[styles.pickerOption, opt === value && styles.pickerOptionActive]} onPress={() => onChange(opt)}>
-              <Text style={[styles.pickerOptionText, opt === value && styles.pickerOptionTextActive]}>
-                {labels?.[i] ?? opt}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        {options.map((opt, i) => (
+          <Pressable key={opt} style={[styles.pickerOption, opt === value && styles.pickerOptionActive]} onPress={() => onChange(opt)}>
+            <Text style={[styles.pickerOptionText, opt === value && styles.pickerOptionTextActive]}>
+              {labels?.[i] ?? opt}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }

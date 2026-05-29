@@ -80,6 +80,10 @@ export default function HomeScreen() {
   const basketScrollRef = useRef<ScrollViewType>(null);
   const [mealScrollX, setMealScrollX] = useState(0);
   const mealScrollRef = useRef<ScrollViewType>(null);
+  const [cravingsScrollX, setCravingsScrollX] = useState(0);
+  const cravingsScrollRef = useRef<ScrollViewType>(null);
+  const [madeForScrollX, setMadeForScrollX] = useState(0);
+  const madeForScrollRef = useRef<ScrollViewType>(null);
 
   const adminBaskets = homeCountry ? getBasketsForCountry(homeCountry) : (experience?.baskets ?? []);
   const adminMeals = homeCountry ? getMealsForCountry(homeCountry) : [];
@@ -102,6 +106,23 @@ export default function HomeScreen() {
     mealScrollRef.current?.scrollTo({ x: next, animated: true });
     setMealScrollX(next);
   }, [mealScrollX]);
+
+  const PRODUCT_CARD_STEP = 164;
+  const scrollCravings = useCallback((dir: "left" | "right") => {
+    const next = dir === "right"
+      ? cravingsScrollX + PRODUCT_CARD_STEP
+      : Math.max(0, cravingsScrollX - PRODUCT_CARD_STEP);
+    cravingsScrollRef.current?.scrollTo({ x: next, animated: true });
+    setCravingsScrollX(next);
+  }, [cravingsScrollX]);
+
+  const scrollMadeFor = useCallback((dir: "left" | "right") => {
+    const next = dir === "right"
+      ? madeForScrollX + PRODUCT_CARD_STEP
+      : Math.max(0, madeForScrollX - PRODUCT_CARD_STEP);
+    madeForScrollRef.current?.scrollTo({ x: next, animated: true });
+    setMadeForScrollX(next);
+  }, [madeForScrollX]);
 
   const firstCat = adminCategories[0]?.name ?? "";
   const activeCat = selectedCategory || firstCat;
@@ -354,16 +375,37 @@ export default function HomeScreen() {
               <ActivityIndicator size="small" color={colors.primary} />
             </View>
           ) : (
-            <ScrollView
-              horizontal
-              nestedScrollEnabled
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {filteredProducts.slice(0, 6).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </ScrollView>
+            <View style={styles.basketScrollWrapper}>
+              <ScrollView
+                ref={cravingsScrollRef}
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+                onScroll={(e) => setCravingsScrollX(e.nativeEvent.contentOffset.x)}
+                scrollEventThrottle={32}
+              >
+                {filteredProducts.slice(0, 6).map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </ScrollView>
+              {cravingsScrollX > 10 && (
+                <Pressable
+                  style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => scrollCravings("left")}
+                >
+                  <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+                </Pressable>
+              )}
+              {filteredProducts.length > 2 && (
+                <Pressable
+                  style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => scrollCravings("right")}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+                </Pressable>
+              )}
+            </View>
           )}
         </View>
 
@@ -438,16 +480,37 @@ export default function HomeScreen() {
             subtitle={HOME_SECTIONS.madeFor.subtitle}
             onSeeAll={() => router.push("/(tabs)/search")}
           />
-          <ScrollView
-            horizontal
-            nestedScrollEnabled
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-          >
-            {filteredProducts.slice(4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </ScrollView>
+          <View style={styles.basketScrollWrapper}>
+            <ScrollView
+              ref={madeForScrollRef}
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+              onScroll={(e) => setMadeForScrollX(e.nativeEvent.contentOffset.x)}
+              scrollEventThrottle={32}
+            >
+              {filteredProducts.slice(4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </ScrollView>
+            {madeForScrollX > 10 && (
+              <Pressable
+                style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => scrollMadeFor("left")}
+              >
+                <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+              </Pressable>
+            )}
+            {filteredProducts.slice(4).length > 2 && (
+              <Pressable
+                style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => scrollMadeFor("right")}
+              >
+                <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {/* Trust Bar */}

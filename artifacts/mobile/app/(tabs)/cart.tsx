@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/context/CartContext";
+import { Analytics } from "@/services/analytics";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
 import { useHomeCountry } from "@/context/HomeCountryContext";
@@ -76,6 +77,8 @@ export default function CartScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateQuantity(id, qty);
   };
+
+  React.useEffect(() => { Analytics.screenView("Cart"); }, []);
 
   const handleCheckout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

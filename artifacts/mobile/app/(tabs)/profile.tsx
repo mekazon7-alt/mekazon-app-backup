@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { Analytics } from "@/services/analytics";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
@@ -93,6 +94,7 @@ export default function ProfileScreen() {
   const handleChangeCountry = async (country: HomeCountry) => {
     Haptics.selectionAsync();
     await setHomeCountry(country);
+    Analytics.selectCountry(country, "profile");
     setShowCountryPicker(false);
   };
 

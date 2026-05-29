@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Linking } from "react-native";
 import React, { createContext, useCallback, useContext, useState } from "react";
+import { Analytics } from "@/services/analytics";
 
 import type { Product } from "@/constants/personalization";
 import { getCheckoutUrl } from "@/services/shopify/cart";
@@ -52,6 +53,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const addItem = (product: Product) => {
+    Analytics.addToCart(product.id, product.name, product.price);
     setItems((prev) => {
       const existing = prev.find((i) => i.id === product.id);
       if (existing) {
@@ -64,6 +66,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeItem = (productId: string) => {
+    const item = items.find((i) => i.id === productId);
+    if (item) Analytics.removeFromCart(item.id, item.name);
     setItems((prev) => prev.filter((i) => i.id !== productId));
   };
 
@@ -125,6 +129,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       await saveOrder(order);
       setItems([]);
 
+      Analytics.beginCheckout(estimated, items.length);
       await AsyncStorage.removeItem(CART_ID_KEY);
       await Linking.openURL(checkoutUrl);
     } catch (err) {

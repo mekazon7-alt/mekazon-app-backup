@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
+import { Analytics } from "@/services/analytics";
 import {
   type SupportedLanguage,
   LANGUAGE_META,
@@ -84,6 +85,8 @@ export default function OnboardingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (selectedLang) await setLanguage(selectedLang);
     await setHomeCountry(selectedCountry);
+    Analytics.selectCountry(selectedCountry, "onboarding");
+    Analytics.onboardingComplete();
     router.replace("/(tabs)");
   };
 

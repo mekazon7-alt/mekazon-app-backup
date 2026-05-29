@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { ProductCard } from "@/components/ProductCard";
+import { Analytics } from "@/services/analytics";
 
 export default function SearchScreen() {
   const colors = useColors();
@@ -22,6 +23,8 @@ export default function SearchScreen() {
   const { experience, shopifyProducts, productsLoading } = useHomeCountry();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+
+  React.useEffect(() => { Analytics.screenView("Search"); }, []);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -54,7 +57,10 @@ export default function SearchScreen() {
             placeholder={`Search in ${experience?.name ?? "Mekazon"}...`}
             placeholderTextColor={colors.mutedForeground}
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(v) => {
+              setQuery(v);
+              if (v.length > 2) Analytics.search(v);
+            }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             autoCapitalize="none"

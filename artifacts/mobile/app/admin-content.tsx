@@ -25,6 +25,7 @@ import type {
   AdminMeal,
   AdminCategory,
   AdminHero,
+  AdminPromo,
   AppContentData,
   ContentCountry,
 } from "@/types/appContent";
@@ -86,7 +87,7 @@ const LIFESTYLE_KEYS = [
 
 const HERO_COUNTRIES: HomeCountry[] = ["uganda", "kenya", "ethiopia", "other", "all"];
 
-type Tab = "baskets" | "meals" | "categories" | "hero";
+type Tab = "baskets" | "meals" | "categories" | "hero" | "promos";
 
 // ─── Dark admin colour palette ────────────────────────────────────────────────
 const C = {
@@ -192,19 +193,21 @@ export default function AdminContentScreen() {
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        {(["baskets", "meals", "categories", "hero"] as Tab[]).map((t) => (
-          <Pressable key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
+        {(["baskets", "meals", "categories", "hero", "promos"] as Tab[]).map((t) => {
+          const label = t === "categories" ? "Cats" : t.charAt(0).toUpperCase() + t.slice(1);
+          return (
+            <Pressable key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
+              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{label}</Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {tab === "baskets" && <BasketsTab content={content} onChange={persistContent} />}
       {tab === "meals" && <MealsTab content={content} onChange={persistContent} />}
       {tab === "categories" && <CategoriesTab content={content} onChange={persistContent} />}
       {tab === "hero" && <HeroTab content={content} onChange={persistContent} />}
+      {tab === "promos" && <PromosTab content={content} onChange={persistContent} />}
     </View>
   );
 }
@@ -246,7 +249,7 @@ function BasketsTab({ content, onChange }: { content: AppContentData; onChange: 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.listContent}>
-        <Text style={styles.listNote}>{content.baskets.length} baskets total · tap pencil to edit · arrows to reorder</Text>
+        <Text style={styles.listNote}>{content.baskets.filter(b => b.active).length} active / {content.baskets.length} total · tap pencil to edit · arrows to reorder</Text>
         {sorted.map((b, i) => (
           <View key={b.id} style={[styles.listItem, !b.active && { opacity: 0.45 }]}>
             <View style={{ flex: 1 }}>
@@ -272,19 +275,29 @@ function BasketsTab({ content, onChange }: { content: AppContentData; onChange: 
 }
 
 function BasketForm({ item, onSave, onClose }: { item: AdminBasket; onSave: (b: AdminBasket) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ ...item, itemsStr: item.items.join(", ") });
+  const [form, setForm] = useState({
+    ...item,
+    itemsStr: item.items.join(", "),
+    shopifyHandlesStr: (item.shopifyHandles ?? []).join(", "),
+  });
   const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
   const save = () => {
     if (!form.name.trim()) { Alert.alert("Name required"); return; }
-    onSave({ ...form, items: form.itemsStr.split(",").map((s) => s.trim()).filter(Boolean) });
+    onSave({
+      ...form,
+      items: form.itemsStr.split(",").map((s) => s.trim()).filter(Boolean),
+      shopifyHandles: form.shopifyHandlesStr.split(",").map((s) => s.trim()).filter(Boolean),
+    });
   };
   return (
     <FormSheet title={item.name ? "Edit Basket" : "New Basket"} onSave={save} onClose={onClose}>
       <Field label="Name" value={form.name} onChange={(v) => set("name", v)} />
       <Field label="Tagline" value={form.tagline} onChange={(v) => set("tagline", v)} />
       <Field label="Price (AED)" value={String(form.price)} onChange={(v) => set("price", parseFloat(v) || 0)} keyboardType="numeric" />
-      <Field label="Items (comma separated)" value={form.itemsStr} onChange={(v) => set("itemsStr", v)} multiline />
-      <Field label="Card colour (hex)" value={form.cardColor} onChange={(v) => set("cardColor", v)} />
+      <Field label="Items — comma separated (display only)" value={form.itemsStr} onChange={(v) => set("itemsStr", v)} multiline />
+      <Field label="Shopify Handles — comma separated (live products)" value={form.shopifyHandlesStr} onChange={(v) => set("shopifyHandlesStr", v)} multiline placeholder="royco-mchuzi-mix, unga-2kg, blue-band-500g" />
+      <LifestyleImagePicker value={form.lifestyleImageKey ?? ""} onChange={(v) => set("lifestyleImageKey", v)} />
+      <ColorField label="Card colour" value={form.cardColor} onChange={(v) => set("cardColor", v)} />
       <ImageUploadField imageKey={`basket:${form.id}`} />
       <PickerField label="Country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
       <ToggleRow label="Active" value={form.active} onChange={(v) => set("active", v)} />
@@ -328,7 +341,7 @@ function MealsTab({ content, onChange }: { content: AppContentData; onChange: (d
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.listContent}>
-        <Text style={styles.listNote}>{content.meals.length} meals · edit ingredients, steps and tips per meal</Text>
+        <Text style={styles.listNote}>{content.meals.filter(m => m.active).length} active / {content.meals.length} meals · edit ingredients, steps and tips per meal</Text>
         {sorted.map((m, i) => (
           <View key={m.id} style={[styles.listItem, !m.active && { opacity: 0.45 }]}>
             <View style={{ flex: 1 }}>
@@ -370,6 +383,7 @@ function MealForm({ item, onSave, onClose }: { item: AdminMeal; onSave: (m: Admi
     <FormSheet title={item.name ? "Edit Meal" : "New Meal"} onSave={save} onClose={onClose}>
       <Field label="Name" value={form.name} onChange={(v) => set("name", v)} />
       <Field label="Description" value={form.description} onChange={(v) => set("description", v)} multiline />
+      <LifestyleImagePicker value={form.lifestyleImageKey ?? ""} onChange={(v) => set("lifestyleImageKey", v)} />
       <ImageUploadField imageKey={`meal:${form.id}`} />
       <PickerField label="Country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
       <Field label="Prep Time" value={form.prepTime} onChange={(v) => set("prepTime", v)} placeholder="e.g. 15 min" />
@@ -405,6 +419,22 @@ function CategoriesTab({ content, onChange }: { content: AppContentData; onChang
     { text: "Delete", style: "destructive", onPress: () => onChange({ ...content, categories: content.categories.filter((c) => c.id !== id) }) },
   ]);
 
+  const move = (id: string, dir: -1 | 1) => {
+    const item = content.categories.find((c) => c.id === id);
+    if (!item) return;
+    const sameCountry = [...content.categories]
+      .filter((c) => c.country === item.country)
+      .sort((a, b) => a.order - b.order);
+    const idx = sameCountry.findIndex((c) => c.id === id);
+    const swap = idx + dir;
+    if (swap < 0 || swap >= sameCountry.length) return;
+    const updated = [...content.categories];
+    const aIdx = updated.findIndex((c) => c.id === sameCountry[idx].id);
+    const bIdx = updated.findIndex((c) => c.id === sameCountry[swap].id);
+    [updated[aIdx].order, updated[bIdx].order] = [updated[bIdx].order, updated[aIdx].order];
+    onChange({ ...content, categories: updated });
+  };
+
   const sorted = [...content.categories].sort((a, b) => {
     const order = ["uganda", "kenya", "ethiopia", "other", "all"];
     const ca = order.indexOf(a.country); const cb = order.indexOf(b.country);
@@ -412,11 +442,18 @@ function CategoriesTab({ content, onChange }: { content: AppContentData; onChang
     return a.order - b.order;
   });
 
+  const isFirstInCountry = (c: AdminCategory) =>
+    sorted.filter((x) => x.country === c.country)[0]?.id === c.id;
+  const isLastInCountry = (c: AdminCategory) => {
+    const group = sorted.filter((x) => x.country === c.country);
+    return group[group.length - 1]?.id === c.id;
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.listContent}>
         <Text style={styles.listNote}>
-          Categories filter products by keyword. Add a Shopify collection handle to enable direct collection fetch in a future update.
+          {content.categories.filter(c => c.active).length} active / {content.categories.length} total · Categories filter products by keyword. Reorder with arrows within each country group.
         </Text>
         {sorted.map((c) => (
           <View key={c.id} style={[styles.listItem, !c.active && { opacity: 0.45 }]}>
@@ -429,6 +466,8 @@ function CategoriesTab({ content, onChange }: { content: AppContentData; onChang
               )}
             </View>
             <View style={styles.listActions}>
+              <ArrowBtn up onPress={() => move(c.id, -1)} disabled={isFirstInCountry(c)} />
+              <ArrowBtn up={false} onPress={() => move(c.id, 1)} disabled={isLastInCountry(c)} />
               <EditBtn onPress={() => setEditItem({ ...c })} />
               <DeleteBtn onPress={() => del(c.id)} />
             </View>
@@ -506,6 +545,103 @@ function HeroTab({ content, onChange }: { content: AppContentData; onChange: (d:
   );
 }
 
+// ─── PROMOS TAB ───────────────────────────────────────────────────────────────
+function PromosTab({ content, onChange }: { content: AppContentData; onChange: (d: AppContentData) => void }) {
+  const [editItem, setEditItem] = useState<AdminPromo | null>(null);
+  const promos = content.promos ?? [];
+
+  const openAdd = () => setEditItem({
+    id: uid(), country: "all", title: "", subtitle: "",
+    ctaLabel: "Shop Now", ctaTarget: "search", badgeText: "",
+    bgColor: "#C8581C", active: false, order: promos.length + 1,
+  });
+
+  const save = (p: AdminPromo) => {
+    const list = [...promos];
+    const idx = list.findIndex((x) => x.id === p.id);
+    if (idx >= 0) list[idx] = p; else list.push(p);
+    onChange({ ...content, promos: list });
+    setEditItem(null);
+  };
+
+  const del = (id: string) => Alert.alert("Delete promo?", "Cannot be undone.", [
+    { text: "Cancel", style: "cancel" },
+    { text: "Delete", style: "destructive", onPress: () => onChange({ ...content, promos: promos.filter((p) => p.id !== id) }) },
+  ]);
+
+  const move = (id: string, dir: -1 | 1) => {
+    const list = [...promos].sort((a, b) => a.order - b.order);
+    const idx = list.findIndex((p) => p.id === id);
+    const swap = idx + dir;
+    if (swap < 0 || swap >= list.length) return;
+    [list[idx].order, list[swap].order] = [list[swap].order, list[idx].order];
+    onChange({ ...content, promos: list });
+  };
+
+  const sorted = [...promos].sort((a, b) => a.order - b.order);
+  const activeCount = sorted.filter((p) => p.active).length;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.listContent}>
+        <Text style={styles.listNote}>
+          {activeCount} active / {sorted.length} promos · Active promos appear as a banner on the home screen. Only the first active promo for the user's country is shown at a time.
+        </Text>
+        {sorted.map((p, i) => (
+          <View key={p.id} style={[styles.listItem, !p.active && { opacity: 0.45 }]}>
+            <View style={[styles.promoBadgePill, { backgroundColor: p.bgColor + "33" }]}>
+              <Text style={[styles.promoBadgePillText, { color: p.bgColor === "#0F1410" ? C.text : p.bgColor }]}>
+                {p.badgeText || "PROMO"}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <CountryBadge value={p.country} accent />
+              <Text style={styles.listItemTitle}>{p.title || "(no title)"}</Text>
+              <Text style={styles.listItemSub}>{p.subtitle || "—"}</Text>
+              <Text style={[styles.listItemSub, { color: C.primary }]}>{p.ctaLabel ?? ""} → {p.ctaTarget ?? ""}</Text>
+            </View>
+            <View style={styles.listActions}>
+              <ArrowBtn up onPress={() => move(p.id, -1)} disabled={i === 0} />
+              <ArrowBtn up={false} onPress={() => move(p.id, 1)} disabled={i === sorted.length - 1} />
+              <EditBtn onPress={() => setEditItem({ ...p })} />
+              <DeleteBtn onPress={() => del(p.id)} />
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+      <FAB label="Add Promo" onPress={openAdd} />
+      {editItem && <PromoForm item={editItem} onSave={save} onClose={() => setEditItem(null)} />}
+    </View>
+  );
+}
+
+function PromoForm({ item, onSave, onClose }: { item: AdminPromo; onSave: (p: AdminPromo) => void; onClose: () => void }) {
+  const [form, setForm] = useState({ ...item });
+  const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
+  const save = () => {
+    if (!form.title.trim()) { Alert.alert("Headline required"); return; }
+    onSave(form);
+  };
+  return (
+    <FormSheet title={item.title ? "Edit Promo" : "New Promo"} onSave={save} onClose={onClose}>
+      <Field label="Headline" value={form.title} onChange={(v) => set("title", v)} placeholder="Eid Mubarak — Free Delivery" />
+      <Field label="Subtitle (optional)" value={form.subtitle ?? ""} onChange={(v) => set("subtitle", v)} placeholder="This weekend only" />
+      <Field label="Badge Text (e.g. EID OFFER, FLASH SALE)" value={form.badgeText ?? ""} onChange={(v) => set("badgeText", v)} placeholder="FLASH SALE" />
+      <Field label="CTA Button Label" value={form.ctaLabel ?? ""} onChange={(v) => set("ctaLabel", v)} placeholder="Shop Now" />
+      <PickerField
+        label="CTA Destination"
+        value={form.ctaTarget ?? "search"}
+        options={["search", "baskets", "orders"]}
+        labels={["Search / Shop", "My Baskets", "My Orders"]}
+        onChange={(v) => set("ctaTarget", v as AdminPromo["ctaTarget"])}
+      />
+      <ColorField label="Banner colour" value={form.bgColor} onChange={(v) => set("bgColor", v)} />
+      <PickerField label="Show to country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
+      <ToggleRow label="Active — visible on home screen" value={form.active} onChange={(v) => set("active", v)} />
+    </FormSheet>
+  );
+}
+
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 function FormSheet({ title, children, onSave, onClose }: {
   title: string; children: React.ReactNode; onSave: () => void; onClose: () => void;
@@ -558,6 +694,48 @@ function PickerField({ label, value, options, labels, onChange }: {
             </Text>
           </Pressable>
         ))}
+      </View>
+    </View>
+  );
+}
+
+function LifestyleImagePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const displayName = (key: string) =>
+    key.replace("lifestyle-", "").replace("hero-", "").replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={styles.fieldLabel}>Lifestyle Image</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        {LIFESTYLE_KEYS.map((key) => (
+          <Pressable key={key} style={[styles.pickerOption, key === value && styles.pickerOptionActive]} onPress={() => onChange(key)}>
+            <Text style={[styles.pickerOptionText, key === value && styles.pickerOptionTextActive]}>{displayName(key)}</Text>
+          </Pressable>
+        ))}
+        {value && !LIFESTYLE_KEYS.includes(value) && (
+          <View style={[styles.pickerOption, styles.pickerOptionActive]}>
+            <Text style={styles.pickerOptionTextActive}>{value}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: value || C.muted, borderWidth: 1, borderColor: C.border }} />
+        <TextInput
+          style={[styles.fieldInput, { flex: 1 }]}
+          value={value}
+          onChangeText={onChange}
+          placeholder="#C8581C"
+          placeholderTextColor={C.muted}
+          autoCapitalize="none"
+        />
       </View>
     </View>
   );
@@ -636,7 +814,7 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: C.border },
   tab: { flex: 1, paddingVertical: 12, alignItems: "center" },
   tabActive: { borderBottomWidth: 2, borderBottomColor: C.primary },
-  tabText: { fontSize: 12, fontWeight: "600", color: C.muted },
+  tabText: { fontSize: 10, fontWeight: "600", color: C.muted },
   tabTextActive: { color: C.primary },
   listContent: { padding: 16, paddingBottom: 100 },
   listNote: { fontSize: 12, color: C.muted, marginBottom: 14, lineHeight: 18 },
@@ -682,4 +860,9 @@ const styles = StyleSheet.create({
   pickerOptionActive: { backgroundColor: C.primary, borderColor: C.primary },
   pickerOptionText: { fontSize: 12, color: C.muted, fontWeight: "600" },
   pickerOptionTextActive: { color: "#FFF" },
+  promoBadgePill: {
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+    alignSelf: "flex-start", marginRight: 10, marginTop: 2,
+  },
+  promoBadgePillText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.6, textTransform: "uppercase" },
 });

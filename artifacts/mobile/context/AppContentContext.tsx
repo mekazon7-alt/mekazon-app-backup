@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import type { AdminBasket, AdminMeal, AdminCategory, AppContentData } from "@/types/appContent";
+import type { AdminBasket, AdminMeal, AdminCategory, AdminPromo, AppContentData } from "@/types/appContent";
 import type { HomeCountry } from "@/constants/personalization";
 import { appContentService } from "@/services/content/appContentService";
 
@@ -9,6 +9,7 @@ interface AppContentContextType {
   getBasketsForCountry: (country: HomeCountry) => AdminBasket[];
   getMealsForCountry: (country: HomeCountry) => AdminMeal[];
   getCategoriesForCountry: (country: HomeCountry) => AdminCategory[];
+  getActivePromos: (country: HomeCountry) => AdminPromo[];
   reload: () => Promise<void>;
 }
 
@@ -18,6 +19,7 @@ const AppContentContext = createContext<AppContentContextType>({
   getBasketsForCountry: () => [],
   getMealsForCountry: () => [],
   getCategoriesForCountry: () => [],
+  getActivePromos: () => [],
   reload: async () => {},
 });
 
@@ -71,9 +73,19 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
     [data]
   );
 
+  const getActivePromos = useCallback(
+    (country: HomeCountry) => {
+      if (!data?.promos) return [];
+      return data.promos
+        .filter((p) => p.active && (p.country === country || p.country === "all"))
+        .sort((a, b) => a.order - b.order);
+    },
+    [data]
+  );
+
   return (
     <AppContentContext.Provider
-      value={{ isLoading, rawData: data, getBasketsForCountry, getMealsForCountry, getCategoriesForCountry, reload }}
+      value={{ isLoading, rawData: data, getBasketsForCountry, getMealsForCountry, getCategoriesForCountry, getActivePromos, reload }}
     >
       {children}
     </AppContentContext.Provider>

@@ -1,7 +1,7 @@
 import type { AppContentData } from "@/types/appContent";
 
 export const DEFAULT_APP_CONTENT: AppContentData = {
-  version: 3,
+  version: 4,
   heroes: [
     { country: "uganda", title: "Ebyo eby'ewaka.", tagline: "Tastes of home, delivered to you in the UAE.", imageKey: "hero-uganda" },
     { country: "kenya", title: "Ladha ya nyumbani.", tagline: "The flavors of home, wherever you are.", imageKey: "hero-kenya" },
@@ -91,5 +91,11 @@ export const DEFAULT_APP_CONTENT: AppContentData = {
     { id: "cat-al-2", country: "all", name: "Grains", icon: "leaf", keywords: ["grain", "maize", "wheat", "teff", "millet", "rice", "sorghum", "barley", "cassava flour"], active: true, order: 2 },
     { id: "cat-al-3", country: "all", name: "Spices", icon: "color-palette", keywords: ["spice", "berbere", "pilau", "royco", "suya", "jollof", "mitmita", "blend", "seasoning"], active: true, order: 3 },
     { id: "cat-al-4", country: "all", name: "Ready Food", icon: "fast-food", keywords: ["ready", "kit", "meal", "instant", "prepared", "mix", "injera"], active: true, order: 4 },
+  ],
+  promos: [
+    { id: "promo-welcome", country: "all", title: "Welcome to Mekazon", subtitle: "Your African home in the UAE — free delivery on your first order", ctaLabel: "Shop Now", ctaTarget: "search", badgeText: "WELCOME", bgColor: "#C8581C", active: false, order: 1 },
+    { id: "promo-eid", country: "all", title: "Eid Mubarak — Free Delivery", subtitle: "On all orders this weekend only", ctaLabel: "Shop Baskets", ctaTarget: "baskets", badgeText: "EID OFFER", bgColor: "#4A7A32", active: false, order: 2 },
+    { id: "promo-coffee-et", country: "ethiopia", title: "New Ethiopian Coffee Arrived", subtitle: "Single-origin Yirgacheffe — limited stock", ctaLabel: "See Products", ctaTarget: "search", badgeText: "NEW STOCK", bgColor: "#3D1C0A", active: false, order: 3 },
+    { id: "promo-flash-ke", country: "kenya", title: "Flash Sale — Kenyan Baskets", subtitle: "This weekend only — order before stock runs out", ctaLabel: "View Baskets", ctaTarget: "baskets", badgeText: "FLASH SALE", bgColor: "#8B3A1A", active: false, order: 4 },
   ],
 };

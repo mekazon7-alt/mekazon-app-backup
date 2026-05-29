@@ -84,10 +84,24 @@ export interface AdminHero {
   imageUrl?: string;
 }
 
+export interface AdminPromo {
+  id: string;
+  country: ContentCountry;
+  title: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  ctaTarget?: "search" | "baskets" | "orders";
+  badgeText?: string;
+  bgColor: string;
+  active: boolean;
+  order: number;
+}
+
 export interface AppContentData {
   version: number;
   baskets: AdminBasket[];
   meals: AdminMeal[];
   categories: AdminCategory[];
   heroes: AdminHero[];
+  promos: AdminPromo[];
 }

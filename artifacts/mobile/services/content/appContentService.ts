@@ -13,7 +13,17 @@ async function load(): Promise<AppContentData> {
     if (stored) {
       const parsed = JSON.parse(stored) as AppContentData;
       if ((parsed.version ?? 0) >= CURRENT_VERSION) return parsed;
-      // Version mismatch — reset to defaults so stale category names don't persist
+      // v3 → v4: promos array added — preserve all existing content and inject promos from defaults
+      if ((parsed.version ?? 0) === 3) {
+        const migrated: AppContentData = {
+          ...parsed,
+          promos: DEFAULT_APP_CONTENT.promos,
+          version: 4,
+        };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+      // Older versions: full reset to defaults
     }
   } catch {
     // fall through to defaults

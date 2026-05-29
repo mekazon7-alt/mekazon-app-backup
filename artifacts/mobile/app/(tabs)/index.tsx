@@ -27,6 +27,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useLocation } from "@/context/LocationContext";
 import { useAppContent } from "@/context/AppContentContext";
+import type { AdminPromo } from "@/types/appContent";
 import { useImageStore } from "@/context/ImageStoreContext";
 import { getProductsByCollectionHandle } from "@/services/shopify/client";
 import { shopifyProductsToProducts } from "@/services/shopify/transforms";
@@ -68,7 +69,8 @@ export default function HomeScreen() {
   const { totalItems } = useCart();
   const { t, language, setLanguage } = useLanguage();
   const { deliveryLabel, selectedEmirate } = useLocation();
-  const { getBasketsForCountry, getMealsForCountry, getCategoriesForCountry } = useAppContent();
+  const { getBasketsForCountry, getMealsForCountry, getCategoriesForCountry, getActivePromos } = useAppContent();
+  const [dismissedPromoId, setDismissedPromoId] = useState<string | null>(null);
   const { uriMap } = useImageStore();
 
   const [locationSheetVisible, setLocationSheetVisible] = useState(false);
@@ -95,6 +97,8 @@ export default function HomeScreen() {
   const adminBaskets = homeCountry ? getBasketsForCountry(homeCountry) : (experience?.baskets ?? []);
   const adminMeals = homeCountry ? getMealsForCountry(homeCountry) : [];
   const adminCategories: AdminCategory[] = homeCountry ? getCategoriesForCountry(homeCountry) : [];
+  const activePromos: AdminPromo[] = homeCountry ? getActivePromos(homeCountry) : [];
+  const currentPromo = activePromos.find((p) => p.id !== dismissedPromoId) ?? null;
 
   const BASKET_CARD_STEP = 262;
   const scrollBaskets = useCallback((dir: "left" | "right") => {
@@ -312,6 +316,36 @@ export default function HomeScreen() {
             </View>
           </Pressable>
         </View>
+
+        {/* Promo Banner — only shown when admin has activated a promo */}
+        {currentPromo && (
+          <Pressable
+            style={[styles.promoBanner, { backgroundColor: currentPromo.bgColor }]}
+            onPress={() => {
+              setDismissedPromoId(currentPromo.id);
+              if (currentPromo.ctaTarget === "search") router.push("/(tabs)/search");
+              else if (currentPromo.ctaTarget === "orders") router.push("/(tabs)/orders");
+            }}
+          >
+            <View style={styles.promoBannerLeft}>
+              {currentPromo.badgeText ? (
+                <View style={styles.promoBadge}>
+                  <Text style={styles.promoBadgeText}>{currentPromo.badgeText}</Text>
+                </View>
+              ) : null}
+              <Text style={styles.promoBannerTitle}>{currentPromo.title}</Text>
+              {currentPromo.subtitle ? (
+                <Text style={styles.promoBannerSub}>{currentPromo.subtitle}</Text>
+              ) : null}
+              {currentPromo.ctaLabel ? (
+                <Text style={styles.promoBannerCta}>{currentPromo.ctaLabel} →</Text>
+              ) : null}
+            </View>
+            <Pressable style={styles.promoDismiss} onPress={() => setDismissedPromoId(currentPromo.id)} hitSlop={10}>
+              <Text style={styles.promoDismissText}>×</Text>
+            </Pressable>
+          </Pressable>
+        )}
 
         {/* Categories — flex-wrap so all chips are always fully visible, no cut-off */}
         {adminCategories.length > 0 && (
@@ -1022,7 +1056,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   heroBtnSecondaryText: { fontSize: 13, fontWeight: "700" },
-  searchRow: { paddingHorizontal: 22, marginBottom: 20 },
+  searchRow: { paddingHorizontal: 22, marginBottom: 12 },
+  promoBanner: {
+    marginHorizontal: 22,
+    marginBottom: 16,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  promoBannerLeft: { flex: 1, gap: 4 },
+  promoBadge: {
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  promoBadgeText: { fontSize: 9, fontWeight: "800", color: "#FFFFFF", letterSpacing: 0.8, textTransform: "uppercase" },
+  promoBannerTitle: { fontSize: 14, fontWeight: "800", color: "#FFFFFF", lineHeight: 19 },
+  promoBannerSub: { fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 16 },
+  promoBannerCta: { fontSize: 12, fontWeight: "700", color: "#FFFFFF", marginTop: 4 },
+  promoDismiss: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  promoDismissText: { fontSize: 20, color: "rgba(255,255,255,0.7)", lineHeight: 24 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",

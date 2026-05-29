@@ -56,7 +56,7 @@ const UGANDA: CountryConfig = {
   flagColors: ["#000000", "#FFCC00", "#DD0000"],
   heroTitle: "Ebyo eby'ewaka.",
   heroSubtitle: "Tastes of home, delivered to you in the UAE.",
-  nativeGreeting: "Webale nyo",
+  nativeGreeting: "Tukusanyukira",
   tagline: "Your Ugandan home in Dubai",
   categories: [
     { name: "Fresh", icon: "leaf" },
@@ -86,7 +86,7 @@ const UGANDA: CountryConfig = {
   ],
   baskets: [
     { id: "ugb1", name: "Matooke Cook-Up", tagline: "Everything for a Sunday matooke feast", items: ["Matooke x2", "Groundnut Paste", "Sukuma Wiki", "Cassava Flour"], price: 59.00, currency: "AED", cardColor: "#4A7A32", lifestyleImageKey: "lifestyle-matooke" },
-    { id: "ugb2", name: "Ugandan Family Feast", tagline: "Feed the family, feel at home", items: ["Posho 2kg", "Matooke x3", "G-Nut Soup Mix", "Ugandan Chili Sauce", "Sukuma Wiki x2"], price: 89.00, currency: "AED", cardColor: "#8B5E3C", lifestyleImageKey: "lifestyle-ugali" },
+    { id: "ugb2", name: "Ugandan Family Feast", tagline: "Feed the family, feel at home", items: ["Posho 2kg", "Matooke x3", "G-Nut Soup Mix", "Ugandan Chili Sauce", "Sukuma Wiki x2"], price: 89.00, currency: "AED", cardColor: "#8B5E3C", lifestyleImageKey: "lifestyle-matooke" },
     { id: "ugb3", name: "Weekend Rolex Kit", tagline: "Roll it up the Ugandan way", items: ["Rolex Spice Mix", "Sukuma Wiki", "Groundnut Paste", "Cassava Flour"], price: 42.00, currency: "AED", cardColor: "#C4A24A", lifestyleImageKey: "lifestyle-spices" },
   ],
   searchSuggestions: ["matooke", "posho flour", "cassava", "groundnut paste", "sukuma wiki", "rolex spice"],
@@ -98,7 +98,7 @@ const UGANDA: CountryConfig = {
 const KENYA: CountryConfig = {
   id: "kenya",
   name: "Kenya",
-  flagColors: ["#006600", "#CC0001", "#000000"],
+  flagColors: ["#000000", "#CC0001", "#006600"],
   heroTitle: "Ladha ya nyumbani.",
   heroSubtitle: "The flavors of home, wherever you are.",
   nativeGreeting: "Karibu nyumbani",
@@ -131,8 +131,8 @@ const KENYA: CountryConfig = {
   ],
   baskets: [
     { id: "keb1", name: "Kenyan Family Ugali Kit", tagline: "The complete Kenyan dinner, always", items: ["Unga 2kg", "Sukuma Wiki x2", "Royco Mchuzi Mix", "Blue Band"], price: 49.00, currency: "AED", cardColor: "#4A7A32", lifestyleImageKey: "lifestyle-ugali" },
-    { id: "keb2", name: "Chai & Chapati Bundle", tagline: "Morning rituals, never missed", items: ["Kenyan Chai Masala", "Blue Band", "Unga 1kg", "Royco Mix"], price: 41.00, currency: "AED", cardColor: "#8B4513", lifestyleImageKey: "lifestyle-coffee" },
-    { id: "keb3", name: "Nyama Choma Night", tagline: "For when you need that smoky taste", items: ["Pilau Masala", "Royco Mchuzi Mix", "Githeri Mix", "Chai Masala"], price: 37.00, currency: "AED", cardColor: "#8B3A2A", lifestyleImageKey: "lifestyle-spices" },
+    { id: "keb2", name: "Chai & Mandazi Bundle", tagline: "Morning rituals, never missed", items: ["Kenyan Chai Masala", "Blue Band", "Githeri Mix", "Royco Mix"], price: 41.00, currency: "AED", cardColor: "#8B4513", lifestyleImageKey: "lifestyle-coffee" },
+    { id: "keb3", name: "Nyama Choma Spice Night", tagline: "For when you need that smoky taste", items: ["Pilau Masala", "Royco Mchuzi Mix", "Githeri Mix", "Chai Masala"], price: 37.00, currency: "AED", cardColor: "#8B3A2A", lifestyleImageKey: "lifestyle-spices" },
   ],
   searchSuggestions: ["unga flour", "royco", "blue band", "kenyan tea", "githeri", "pilau masala"],
   notificationHint: "Don't let the unga run out — reorder now?",
@@ -175,7 +175,7 @@ const ETHIOPIA: CountryConfig = {
     { id: "et8", name: "Tej Honey Wine Mix", description: "Ethiopian honey wine brewing kit", price: 32.00, currency: "AED", unit: "kit", tag: "New", cardColor: "#D4A800" },
   ],
   baskets: [
-    { id: "etb1", name: "Coffee Ceremony Kit", tagline: "The full Ethiopian coffee ritual", items: ["Ethiopian Coffee 250g", "Tej Honey Mix", "Teff Flour", "Incense pack"], price: 79.00, currency: "AED", cardColor: "#3D1C0A", lifestyleImageKey: "lifestyle-coffee" },
+    { id: "etb1", name: "Coffee Ceremony Kit", tagline: "The full Ethiopian coffee ritual", items: ["Ethiopian Coffee 250g", "Tej Honey Mix", "Teff Flour", "Niter Kibbeh"], price: 79.00, currency: "AED", cardColor: "#3D1C0A", lifestyleImageKey: "lifestyle-coffee" },
     { id: "etb2", name: "Tibs Weekend Feast", tagline: "Sizzling tibs, just like Addis", items: ["Berbere x2", "Niter Kibbeh", "Mitmita", "Shiro Powder", "Injera x5"], price: 89.00, currency: "AED", cardColor: "#8B3A1A", lifestyleImageKey: "lifestyle-injera" },
     { id: "etb3", name: "Injera Starter Pack", tagline: "Make injera from scratch", items: ["Teff Flour 1kg", "Shiro Powder", "Berbere", "Niter Kibbeh"], price: 67.00, currency: "AED", cardColor: "#8B6914", lifestyleImageKey: "lifestyle-spices" },
   ],
@@ -187,12 +187,12 @@ const ETHIOPIA: CountryConfig = {
 
 const OTHER: CountryConfig = {
   id: "other",
-  name: "African Countries",
+  name: "West & Central Africa",
   flagColors: ["#CC0001", "#000000", "#007A47"],
   heroTitle: "Africa's Finest.",
   heroSubtitle: "Every taste of the continent, in one place.",
   nativeGreeting: "Welcome home",
-  tagline: "Your African home in the UAE",
+  tagline: "Your West & Central African home in the UAE",
   categories: [
     { name: "West African", icon: "globe" },
     { name: "Grains", icon: "nutrition" },
@@ -288,8 +288,8 @@ export const ONBOARDING_OPTIONS: Array<{
   cardImageKey: string;
 }> = [
   { id: "uganda", name: "Uganda", subtitle: "Matooke, posho, groundnuts, fresh greens", flagColors: ["#000000", "#FFCC00", "#DD0000"], cardImageKey: "lifestyle-matooke" },
-  { id: "kenya", name: "Kenya", subtitle: "Ugali, Royco, Kenyan tea, Blue Band", flagColors: ["#006600", "#CC0001", "#000000"], cardImageKey: "lifestyle-ugali" },
+  { id: "kenya", name: "Kenya", subtitle: "Ugali, Royco, Kenyan tea, Blue Band", flagColors: ["#000000", "#CC0001", "#006600"], cardImageKey: "lifestyle-ugali" },
   { id: "ethiopia", name: "Ethiopia", subtitle: "Injera, berbere, coffee, shiro", flagColors: ["#009A44", "#FCDD09", "#EF3340"], cardImageKey: "lifestyle-injera" },
-  { id: "other", name: "Other African Countries", subtitle: "Egusi, fufu, jollof, suya, plantain", flagColors: ["#CC0001", "#000000", "#007A47"], cardImageKey: "hero-pan-african" },
+  { id: "other", name: "West & Central Africa", subtitle: "Egusi, fufu, jollof, suya, plantain", flagColors: ["#CC0001", "#000000", "#007A47"], cardImageKey: "hero-pan-african" },
   { id: "all", name: "Show Me Everything", subtitle: "All African foods, no filter", flagColors: ["#C8581C", "#C8581C", "#C8581C"], cardImageKey: "hero-pan-african" },
 ];

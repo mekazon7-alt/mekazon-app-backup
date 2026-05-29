@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Linking } from "react-native";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -281,57 +283,47 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {(
-            [
-              { icon: "heart-outline", label: t("profileSaved") },
-              { icon: "repeat-outline", label: t("profileRepeat") },
-              { icon: "location-outline", label: t("profileAddress") },
-              { icon: "card-outline", label: t("profilePayment") },
-              { icon: "logo-whatsapp", label: t("profileSupport") },
-            ] as const
-          ).map((item) => (
-            <Pressable key={item.label} style={[styles.menuRow, { borderBottomColor: colors.border }]}>
-              <Ionicons name={item.icon} size={20} color={colors.mutedForeground} />
-              <Text style={[styles.menuLabel, { color: colors.foreground }]}>{item.label}</Text>
+          <Pressable
+            style={[styles.menuRow, { borderBottomColor: colors.border }]}
+            onPress={() => Linking.openURL("https://wa.me/971561167903")}
+          >
+            <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+            <Text style={[styles.menuLabel, { color: colors.foreground }]}>{t("profileSupport")}</Text>
+            <Ionicons name="open-outline" size={16} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
+
+        {/* Admin Tools — only shown when admin is logged in */}
+        {adminLoggedIn && (
+          <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => router.push("/debug-collections")}
+            >
+              <Ionicons name="git-branch-outline" size={20} color={colors.mutedForeground} />
+              <Text style={[styles.menuLabel, { color: colors.foreground }]}>Debug: Shopify Collections</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
             </Pressable>
-          ))}
-        </View>
-
-        {/* Developer Tools */}
-        <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Pressable
-            style={[styles.menuRow, { borderBottomColor: adminLoggedIn ? colors.border : "transparent" }]}
-            onPress={() => router.push("/debug-collections")}
-          >
-            <Ionicons name="git-branch-outline" size={20} color={colors.mutedForeground} />
-            <Text style={[styles.menuLabel, { color: colors.foreground }]}>Debug: Shopify Collections</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-          </Pressable>
-
-          {adminLoggedIn && (
-            <>
-              <Pressable
-                style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                onPress={() => router.push("/admin-content")}
-              >
-                <Ionicons name="settings-outline" size={20} color={colors.primary} />
-                <Text style={[styles.menuLabel, { color: colors.primary }]}>App Content Admin</Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-              </Pressable>
-              <Pressable
-                style={[styles.menuRow, { borderBottomColor: "transparent" }]}
-                onPress={handleAdminLogout}
-              >
-                <Ionicons name="log-out-outline" size={20} color={colors.destructive} />
-                <Text style={[styles.menuLabel, { color: colors.destructive }]}>Logout from Admin</Text>
-              </Pressable>
-            </>
-          )}
-        </View>
+            <Pressable
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
+              onPress={() => router.push("/admin-content")}
+            >
+              <Ionicons name="settings-outline" size={20} color={colors.primary} />
+              <Text style={[styles.menuLabel, { color: colors.primary }]}>App Content Admin</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+            <Pressable
+              style={[styles.menuRow, { borderBottomColor: "transparent" }]}
+              onPress={handleAdminLogout}
+            >
+              <Ionicons name="log-out-outline" size={20} color={colors.destructive} />
+              <Text style={[styles.menuLabel, { color: colors.destructive }]}>Logout from Admin</Text>
+            </Pressable>
+          </View>
+        )}
 
         <Text style={[styles.shopifyNote, { color: colors.mutedForeground }]}>
-          Powered by Shopify. Orders, payments, and inventory managed via mekazon.com
+          Your orders and payments are handled securely through mekazon.com
         </Text>
 
         {/* Hidden version — tapping 5 times opens admin login */}
@@ -407,13 +399,6 @@ export default function ProfileScreen() {
             </Text>
           </Pressable>
 
-          {/* Developer note */}
-          <View style={[styles.devNote, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-            <Ionicons name="information-circle-outline" size={13} color={colors.mutedForeground} />
-            <Text style={[styles.devNoteText, { color: colors.mutedForeground }]}>
-              Dev note: This is temporary password auth. Replace with proper backend authentication before production release.
-            </Text>
-          </View>
         </Animated.View>
       </Modal>
 

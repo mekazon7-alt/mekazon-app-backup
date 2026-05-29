@@ -76,7 +76,7 @@ export default function WelcomeScreen() {
           </Pressable>
 
           <Text style={styles.footerNote}>
-            No account needed to browse. Order directly through Shopify checkout.
+            No account needed to browse. Secure checkout, cash on delivery available.
           </Text>
         </Animated.View>
       </View>

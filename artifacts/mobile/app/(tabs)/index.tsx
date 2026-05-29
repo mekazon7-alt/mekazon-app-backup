@@ -77,6 +77,7 @@ export default function HomeScreen() {
   const [showAllBaskets, setShowAllBaskets] = useState(false);
   const [showAllMeals, setShowAllMeals] = useState(false);
   const [showReadyFood, setShowReadyFood] = useState(false);
+  const [showDeals, setShowDeals] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [basketScrollX, setBasketScrollX] = useState(0);
   const basketScrollRef = useRef<ScrollViewType>(null);
@@ -326,6 +327,7 @@ export default function HomeScreen() {
                     ]}
                     onPress={() => {
                       if (cat.name === "Ready Food") { setShowReadyFood(true); return; }
+                      if (cat.name === "Deals") { setShowDeals(true); return; }
                       setSelectedCategory(isActive ? "" : cat.name);
                     }}
                   >
@@ -766,6 +768,44 @@ export default function HomeScreen() {
           </Modal>
         );
       })()}
+
+      {/* Deals Coming Soon Modal */}
+      <Modal visible={showDeals} animationType="slide" transparent>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowDeals(false)} />
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[styles.modalSheet, { backgroundColor: colors.background }]}
+        >
+          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <View style={styles.readyFoodHeroWrap}>
+            <Image
+              source={LIFESTYLE_IMAGES["lifestyle-spices"]}
+              style={styles.readyFoodHero}
+              contentFit="cover"
+            />
+            <LinearGradient
+              colors={["transparent", "rgba(15,18,10,0.55)"]}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.readyFoodComingSoonBadge}>
+              <Text style={styles.readyFoodComingSoonText}>Coming Soon</Text>
+            </View>
+          </View>
+          <Text style={[styles.readyFoodDish, { color: colors.foreground }]}>Deals & Weekly Offers</Text>
+          <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginTop: 6 }}>
+            We are curating exclusive weekly deals and bundles for the African diaspora community in the UAE.
+          </Text>
+          <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 20, marginTop: 10 }}>
+            Check back soon — great prices on your favourite products are on the way.
+          </Text>
+          <Pressable
+            style={[styles.readyFoodBtn, { backgroundColor: colors.primary }]}
+            onPress={() => setShowDeals(false)}
+          >
+            <Text style={styles.readyFoodBtnText}>Got It</Text>
+          </Pressable>
+        </Animated.View>
+      </Modal>
 
       {/* Meal Recipe Modal */}
       <Modal visible={!!selectedMeal} animationType="slide" transparent>

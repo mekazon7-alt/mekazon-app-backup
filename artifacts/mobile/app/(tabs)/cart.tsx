@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import React, { useMemo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -69,7 +70,16 @@ export default function CartScreen() {
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>{t("cartTitle")}</Text>
         {items.length > 0 && (
-          <Pressable onPress={clearCart}>
+          <Pressable onPress={() => {
+            Alert.alert(
+              "Clear Cart",
+              "Remove all items from your cart?",
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Clear", style: "destructive", onPress: clearCart },
+              ]
+            );
+          }}>
             <Text style={[styles.clearBtn, { color: colors.destructive }]}>{t("cartClear")}</Text>
           </Pressable>
         )}
@@ -89,7 +99,7 @@ export default function CartScreen() {
             color: sameDayEligible ? "#4E7234" : colors.mutedForeground
           }]}>
             {sameDayEligible
-              ? "Same-day delivery available — Dubai, Uganda orders"
+              ? "Same-day delivery available for your area"
               : `Next-day delivery — ${selectedEmirate.name}`}
           </Text>
         </View>
@@ -251,7 +261,7 @@ export default function CartScreen() {
             </Pressable>
 
             <Text style={[styles.checkoutNote, { color: colors.mutedForeground }]}>
-              Payment processed securely via Shopify. Cash on delivery available.
+              Payment processed securely. Cash on delivery available.
             </Text>
           </View>
         </>

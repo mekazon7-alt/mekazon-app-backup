@@ -163,10 +163,6 @@ export default function VerifyOtpScreen() {
               </Text>
             </Pressable>
 
-            <View style={[styles.devNote, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Ionicons name="code-slash-outline" size={13} color={colors.mutedForeground} />
-              <Text style={[styles.devNoteText, { color: colors.mutedForeground }]}>{t("otpDevNote")}</Text>
-            </View>
           </>
         ) : (
           <>

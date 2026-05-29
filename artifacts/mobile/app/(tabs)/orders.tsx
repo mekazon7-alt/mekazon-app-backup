@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Linking } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import {
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -14,7 +15,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
+import { useCart } from "@/context/CartContext";
 import { loadOrders, clearOrders, type LocalOrder } from "@/services/orderHistoryService";
+import type { Product } from "@/constants/personalization";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -30,6 +33,7 @@ export default function OrdersScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const { addItem } = useCart();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
@@ -50,9 +54,36 @@ export default function OrdersScreen() {
     setRefreshing(false);
   };
 
-  const handleClearAll = async () => {
-    await clearOrders();
-    setOrders([]);
+  const handleClearAll = () => {
+    Alert.alert(
+      "Clear Order History",
+      "This will remove all orders from this device. Your actual orders on Mekazon are not affected.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Clear", style: "destructive", onPress: async () => {
+          await clearOrders();
+          setOrders([]);
+        }},
+      ]
+    );
+  };
+
+  const handleReorder = (order: LocalOrder) => {
+    order.items.forEach((item) => {
+      const product: Product = {
+        id: `reorder-${item.name.replace(/\s+/g, "-").toLowerCase()}`,
+        name: item.name,
+        description: "",
+        price: item.price,
+        currency: "AED",
+        unit: "",
+        cardColor: "#C8581C",
+      };
+      for (let i = 0; i < item.quantity; i++) {
+        addItem(product);
+      }
+    });
+    Alert.alert("Added to Cart", `${order.items.length} item${order.items.length !== 1 ? "s" : ""} added to your cart.`);
   };
 
   const renderOrder = ({ item }: { item: LocalOrder }) => (
@@ -119,14 +150,23 @@ export default function OrdersScreen() {
       </View>
 
       {/* Actions */}
-      <Pressable
-        style={[styles.viewCheckoutBtn, { backgroundColor: colors.primary }]}
-        onPress={() => Linking.openURL(item.checkoutUrl)}
-      >
-        <Ionicons name="storefront-outline" size={15} color="#FFFFFF" />
-        <Text style={styles.viewCheckoutText}>{t("orderViewCheckout")}</Text>
-        <Ionicons name="open-outline" size={13} color="#FFFFFF" />
-      </Pressable>
+      <View style={styles.actionsRow}>
+        <Pressable
+          style={[styles.reorderBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+          onPress={() => handleReorder(item)}
+        >
+          <Ionicons name="refresh-outline" size={15} color={colors.primary} />
+          <Text style={[styles.reorderText, { color: colors.primary }]}>Reorder</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.viewCheckoutBtn, { backgroundColor: colors.primary }]}
+          onPress={() => Linking.openURL(item.checkoutUrl)}
+        >
+          <Ionicons name="storefront-outline" size={15} color="#FFFFFF" />
+          <Text style={styles.viewCheckoutText}>{t("orderViewCheckout")}</Text>
+          <Ionicons name="open-outline" size={13} color="#FFFFFF" />
+        </Pressable>
+      </View>
     </View>
   );
 
@@ -136,7 +176,7 @@ export default function OrdersScreen() {
         <Text style={[styles.title, { color: colors.foreground }]}>{t("ordersTitle")}</Text>
         {orders.length > 0 && (
           <Pressable onPress={handleClearAll}>
-            <Text style={[styles.clearBtn, { color: colors.mutedForeground }]}>Clear all</Text>
+            <Text style={[styles.clearBtn, { color: colors.mutedForeground }]}>Clear history</Text>
           </Pressable>
         )}
       </View>
@@ -253,13 +293,29 @@ const styles = StyleSheet.create({
   grandTotalRow: { marginTop: 6, paddingTop: 8, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.06)" },
   grandLabel: { fontSize: 15, fontWeight: "700" },
   grandValue: { fontSize: 18, fontWeight: "800" },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    margin: 14,
+    marginTop: 0,
+  },
+  reorderBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 14,
+    paddingVertical: 13,
+    borderWidth: 1,
+  },
+  reorderText: { fontSize: 14, fontWeight: "700" },
   viewCheckoutBtn: {
+    flex: 2,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    margin: 14,
-    marginTop: 0,
     borderRadius: 14,
     paddingVertical: 13,
   },

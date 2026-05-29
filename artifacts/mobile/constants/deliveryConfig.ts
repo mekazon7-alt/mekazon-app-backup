@@ -1,39 +1,63 @@
-import type { HomeCountry } from "@/constants/personalization";
-
 export const VAT_RATE = 0.05;
 
-export const SAME_DAY_FEE_AED = 35;
 export const NEXT_DAY_FEE_AED = 20;
+export const SAME_DAY_FEE_AED = 32;
+export const EXPRESS_FEE_AED = 40;
 
-/**
- * isSameDayEligible — only Dubai + Uganda qualifies for same-day.
- * All other emirate+country combinations default to next-day.
- */
-export function isSameDayEligible(emirateId: string, country: HomeCountry | null): boolean {
-  return emirateId === "dubai" && country === "uganda";
+export type DeliveryOption = "next-day" | "same-day" | "express";
+
+export interface DeliveryChoice {
+  id: DeliveryOption;
+  label: string;
+  description: string;
+  fee: number;
 }
 
-/**
- * computeDeliveryFee — returns estimated delivery fee in AED.
- *   Dubai + Uganda = AED 35 (same-day)
- *   All others     = AED 20 (next-day)
- */
-export function computeDeliveryFee(emirateId: string, country: HomeCountry | null): number {
-  return isSameDayEligible(emirateId, country) ? SAME_DAY_FEE_AED : NEXT_DAY_FEE_AED;
+export const DUBAI_DELIVERY_OPTIONS: DeliveryChoice[] = [
+  {
+    id: "next-day",
+    label: "Next Day",
+    description: "Delivered tomorrow",
+    fee: NEXT_DAY_FEE_AED,
+  },
+  {
+    id: "same-day",
+    label: "Same Day",
+    description: "Delivered today",
+    fee: SAME_DAY_FEE_AED,
+  },
+  {
+    id: "express",
+    label: "Express",
+    description: "Within 2 hours",
+    fee: EXPRESS_FEE_AED,
+  },
+];
+
+export function isDubai(emirateId: string): boolean {
+  return emirateId === "dubai";
 }
 
-/**
- * computeVAT — 5% VAT on product subtotal only.
- * VAT is NOT applied to delivery fees.
- */
+export function computeDeliveryFee(
+  emirateId: string,
+  option: DeliveryOption = "next-day"
+): number {
+  if (isDubai(emirateId)) {
+    return DUBAI_DELIVERY_OPTIONS.find((o) => o.id === option)?.fee ?? NEXT_DAY_FEE_AED;
+  }
+  return NEXT_DAY_FEE_AED;
+}
+
 export function computeVAT(subtotalAED: number): number {
   return Math.round(subtotalAED * VAT_RATE * 100) / 100;
 }
 
-export function getDeliveryLabel(emirateId: string, country: HomeCountry | null): string {
-  if (isSameDayEligible(emirateId, country)) return "Same-day delivery (Dubai)";
+export function getDeliveryLabel(emirateId: string, option: DeliveryOption = "next-day"): string {
+  if (isDubai(emirateId)) {
+    const choice = DUBAI_DELIVERY_OPTIONS.find((o) => o.id === option);
+    return `${choice?.label ?? "Next day"} delivery — Dubai`;
+  }
   const names: Record<string, string> = {
-    dubai: "Dubai",
     "abu-dhabi": "Abu Dhabi",
     sharjah: "Sharjah",
     ajman: "Ajman",
@@ -42,5 +66,5 @@ export function getDeliveryLabel(emirateId: string, country: HomeCountry | null)
     "umm-al-quwain": "Umm Al Quwain",
   };
   const name = names[emirateId] ?? emirateId;
-  return `Next-day delivery (${name})`;
+  return `Next-day delivery — ${name}`;
 }

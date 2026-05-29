@@ -714,7 +714,7 @@ export default function HomeScreen() {
       {/* Ready Food Coming Soon Modal */}
       {(() => {
         const READY_FOOD_IMAGES: Record<string, ReturnType<typeof require>> = {
-          uganda:   require("@/assets/images/lifestyle-matooke.png"),
+          uganda:   require("@/assets/images/lifestyle-ugali.png"),
           kenya:    require("@/assets/images/lifestyle-ugali.png"),
           ethiopia: require("@/assets/images/lifestyle-injera.png"),
           other:    require("@/assets/images/lifestyle-spices.png"),

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
@@ -21,7 +22,26 @@ import { useLocation } from "@/context/LocationContext";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { LocationBottomSheet } from "@/components/LocationBottomSheet";
 import { CART_CONTENT } from "@/constants/appContent";
-import { computeDeliveryFee, computeVAT, isSameDayEligible } from "@/constants/deliveryConfig";
+import {
+  computeDeliveryFee,
+  computeVAT,
+  isDubai,
+  DUBAI_DELIVERY_OPTIONS,
+  type DeliveryOption,
+} from "@/constants/deliveryConfig";
+
+const CART_IMAGES: Record<string, ReturnType<typeof require>> = {
+  "product-royco": require("@/assets/images/product-royco.png"),
+  "product-unga": require("@/assets/images/product-unga.png"),
+  "product-teff": require("@/assets/images/product-teff.png"),
+  "product-berbere": require("@/assets/images/product-berbere.png"),
+  "product-coffee": require("@/assets/images/product-coffee.png"),
+  "lifestyle-matooke": require("@/assets/images/lifestyle-matooke.png"),
+  "lifestyle-injera": require("@/assets/images/lifestyle-injera.png"),
+  "lifestyle-spices": require("@/assets/images/lifestyle-spices.png"),
+  "lifestyle-ugali": require("@/assets/images/lifestyle-ugali.png"),
+  "lifestyle-coffee": require("@/assets/images/lifestyle-coffee.png"),
+};
 
 export default function CartScreen() {
   const colors = useColors();
@@ -31,14 +51,17 @@ export default function CartScreen() {
   const { homeCountry } = useHomeCountry();
   const { items, totalItems, totalPrice, updateQuantity, clearCart, checkoutLoading, shopifyCheckout } = useCart();
   const [showLocationSheet, setShowLocationSheet] = useState(false);
+  const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>("next-day");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
 
+  const isDubaiSelected = !!selectedEmirate && isDubai(selectedEmirate.id);
+
   const deliveryFee = useMemo(() => {
     if (!selectedEmirate) return null;
-    return computeDeliveryFee(selectedEmirate.id, homeCountry);
-  }, [selectedEmirate, homeCountry]);
+    return computeDeliveryFee(selectedEmirate.id, deliveryOption);
+  }, [selectedEmirate, deliveryOption]);
 
   const vatAmount = useMemo(() => computeVAT(totalPrice), [totalPrice]);
 
@@ -47,10 +70,7 @@ export default function CartScreen() {
     return totalPrice + vatAmount + deliveryFee;
   }, [totalPrice, vatAmount, deliveryFee]);
 
-  const sameDayEligible = useMemo(() => {
-    if (!selectedEmirate) return false;
-    return isSameDayEligible(selectedEmirate.id, homeCountry);
-  }, [selectedEmirate, homeCountry]);
+  const selectedDeliveryChoice = DUBAI_DELIVERY_OPTIONS.find((o) => o.id === deliveryOption);
 
   const handleQty = (id: string, qty: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -88,25 +108,64 @@ export default function CartScreen() {
         )}
       </View>
 
-      {selectedEmirate && (
-        <View style={[styles.deliveryBanner, {
-          backgroundColor: sameDayEligible ? "#F0F5E8" : colors.secondary,
-          borderColor: colors.border
-        }]}>
-          <Ionicons
-            name={sameDayEligible ? "flash" : "time-outline"}
-            size={14}
-            color={sameDayEligible ? "#4E7234" : colors.mutedForeground}
-          />
-          <Text style={[styles.deliveryBannerText, {
-            color: sameDayEligible ? "#4E7234" : colors.mutedForeground
-          }]}>
-            {sameDayEligible
-              ? "Same-day delivery available for your area"
-              : `Next-day delivery — ${selectedEmirate.name}`}
+      {selectedEmirate && isDubaiSelected ? (
+        /* Dubai — three selectable delivery options */
+        <View style={styles.deliverySelector}>
+          <Text style={[styles.deliverySelectorLabel, { color: colors.mutedForeground }]}>
+            DELIVERY OPTION — DUBAI
+          </Text>
+          <View style={styles.deliveryOptions}>
+            {DUBAI_DELIVERY_OPTIONS.map((opt) => {
+              const active = deliveryOption === opt.id;
+              return (
+                <Pressable
+                  key={opt.id}
+                  style={[
+                    styles.deliveryOptionPill,
+                    {
+                      backgroundColor: active ? colors.primary : colors.secondary,
+                      borderColor: active ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setDeliveryOption(opt.id);
+                  }}
+                >
+                  <Text style={[
+                    styles.deliveryOptionLabel,
+                    { color: active ? "#FFFFFF" : colors.foreground },
+                  ]}>
+                    {opt.label}
+                  </Text>
+                  <Text style={[
+                    styles.deliveryOptionFee,
+                    { color: active ? "rgba(255,255,255,0.85)" : colors.mutedForeground },
+                  ]}>
+                    AED {opt.fee}
+                  </Text>
+                  {opt.id === "express" && (
+                    <Text style={[
+                      styles.deliveryOptionDesc,
+                      { color: active ? "rgba(255,255,255,0.7)" : colors.mutedForeground },
+                    ]}>
+                      {opt.description}
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : selectedEmirate ? (
+        /* Other emirates — simple next-day banner */
+        <View style={[styles.deliveryBanner, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
+          <Text style={[styles.deliveryBannerText, { color: colors.mutedForeground }]}>
+            Next-day delivery — {selectedEmirate.name}
           </Text>
         </View>
-      )}
+      ) : null}
 
       {items.length === 0 ? (
         <View style={styles.emptyState}>
@@ -136,9 +195,28 @@ export default function CartScreen() {
             ItemSeparatorComponent={() => (
               <View style={[styles.separator, { backgroundColor: colors.border }]} />
             )}
-            renderItem={({ item }) => (
+            renderItem={({ item }) => {
+              const imgSrc = item.imageKey ? CART_IMAGES[item.imageKey] : null;
+              const isProduct = item.imageKey?.startsWith("product-");
+              return (
               <View style={styles.cartItem}>
-                <View style={[styles.colorDot, { backgroundColor: item.cardColor }]} />
+                {imgSrc ? (
+                  <View style={[styles.itemThumb, { backgroundColor: isProduct ? "#F4F6EE" : item.cardColor + "22" }]}>
+                    <Image
+                      source={imgSrc}
+                      style={isProduct ? styles.itemThumbContain : styles.itemThumbCover}
+                      contentFit={isProduct ? "contain" : "cover"}
+                    />
+                  </View>
+                ) : item.remoteImageUrl ? (
+                  <View style={[styles.itemThumb, { backgroundColor: item.cardColor + "22" }]}>
+                    <Image source={{ uri: item.remoteImageUrl }} style={styles.itemThumbCover} contentFit="cover" />
+                  </View>
+                ) : (
+                  <View style={[styles.itemThumb, { backgroundColor: item.cardColor + "33" }]}>
+                    <View style={[styles.itemThumbDot, { backgroundColor: item.cardColor }]} />
+                  </View>
+                )}
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: colors.foreground }]}>{item.name}</Text>
                   <Text style={[styles.itemUnit, { color: colors.mutedForeground }]}>{item.unit}</Text>
@@ -166,7 +244,8 @@ export default function CartScreen() {
                   </Pressable>
                 </View>
               </View>
-            )}
+              );
+            }}
           />
 
           <View
@@ -210,11 +289,15 @@ export default function CartScreen() {
               <View style={styles.summaryRow}>
                 <View style={styles.summaryLabelRow}>
                   <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-                    Est. delivery
+                    {isDubaiSelected && selectedDeliveryChoice
+                      ? `${selectedDeliveryChoice.label} delivery`
+                      : "Est. delivery"}
                   </Text>
-                  {sameDayEligible && (
-                    <View style={[styles.sameDayBadge, { backgroundColor: "#4E7234" + "22" }]}>
-                      <Text style={[styles.sameDayBadgeText, { color: "#4E7234" }]}>same-day</Text>
+                  {isDubaiSelected && selectedDeliveryChoice && (
+                    <View style={[styles.sameDayBadge, { backgroundColor: colors.primary + "18" }]}>
+                      <Text style={[styles.sameDayBadgeText, { color: colors.primary }]}>
+                        {selectedDeliveryChoice.description}
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -311,6 +394,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   deliveryBannerText: { fontSize: 13, fontWeight: "600", flex: 1 },
+  deliverySelector: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+  },
+  deliverySelectorLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  deliveryOptions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  deliveryOptionPill: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 2,
+  },
+  deliveryOptionLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  deliveryOptionFee: {
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  deliveryOptionDesc: {
+    fontSize: 9,
+    fontWeight: "500",
+    letterSpacing: 0.1,
+    textAlign: "center",
+  },
   emptyState: {
     flex: 1,
     alignItems: "center",
@@ -330,6 +451,29 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   colorDot: { width: 42, height: 42, borderRadius: 12, flexShrink: 0 },
+  itemThumb: {
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  itemThumbContain: {
+    width: "80%",
+    height: "80%",
+  },
+  itemThumbCover: {
+    width: "100%",
+    height: "100%",
+  },
+  itemThumbDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    opacity: 0.7,
+  },
   itemInfo: { flex: 1, gap: 2 },
   itemName: { fontSize: 14, fontWeight: "600" },
   itemUnit: { fontSize: 12 },

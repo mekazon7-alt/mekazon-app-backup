@@ -29,7 +29,7 @@ export const DUBAI_DELIVERY_OPTIONS: DeliveryChoice[] = [
   {
     id: "express",
     label: "Express",
-    description: "Within 2 hours",
+    description: "2 hrs from pickup",
     fee: EXPRESS_FEE_AED,
   },
 ];

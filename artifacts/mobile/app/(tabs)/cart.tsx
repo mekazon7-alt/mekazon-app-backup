@@ -115,7 +115,9 @@ export default function CartScreen() {
             DELIVERY OPTION — DUBAI
           </Text>
           <View style={styles.deliveryOptions}>
-            {DUBAI_DELIVERY_OPTIONS.map((opt) => {
+            {DUBAI_DELIVERY_OPTIONS.filter((opt) =>
+            opt.id !== "express" || homeCountry === "uganda"
+          ).map((opt) => {
               const active = deliveryOption === opt.id;
               return (
                 <Pressable

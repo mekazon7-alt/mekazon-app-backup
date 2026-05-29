@@ -196,9 +196,7 @@ export default function HomeScreen() {
       ? t("goodMorning")
       : uaeHour >= 12 && uaeHour < 17
         ? t("goodAfternoon")
-        : uaeHour >= 17 && uaeHour < 22
-          ? t("goodEvening")
-          : t("goodNight");
+        : t("goodEvening");
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -748,7 +746,7 @@ export default function HomeScreen() {
       {/* Ready Food Coming Soon Modal */}
       {(() => {
         const READY_FOOD_IMAGES: Record<string, ReturnType<typeof require>> = {
-          uganda:   require("@/assets/images/lifestyle-ugali.png"),
+          uganda:   require("@/assets/images/lifestyle-matooke.png"),
           kenya:    require("@/assets/images/lifestyle-ugali.png"),
           ethiopia: require("@/assets/images/lifestyle-injera.png"),
           other:    require("@/assets/images/lifestyle-spices.png"),

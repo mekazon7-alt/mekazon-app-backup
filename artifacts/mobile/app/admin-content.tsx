@@ -217,7 +217,7 @@ function BasketsTab({ content, onChange }: { content: AppContentData; onChange: 
   const [editItem, setEditItem] = useState<AdminBasket | null>(null);
 
   const openAdd = () => setEditItem({
-    id: uid(), country: "kenya", name: "", tagline: "", items: [], price: 0,
+    id: uid(), countries: ["kenya"], name: "", tagline: "", items: [], price: 0,
     currency: "AED", cardColor: "#4A7A32", lifestyleImageKey: "lifestyle-ugali",
     active: true, order: content.baskets.length + 1,
   });
@@ -253,7 +253,7 @@ function BasketsTab({ content, onChange }: { content: AppContentData; onChange: 
         {sorted.map((b, i) => (
           <View key={b.id} style={[styles.listItem, !b.active && { opacity: 0.45 }]}>
             <View style={{ flex: 1 }}>
-              <CountryBadge value={b.country} />
+              <CountryBadge value={b.countries} />
               <Text style={styles.listItemTitle}>{b.name || "(no name)"}</Text>
               <Text style={styles.listItemSub}>{b.tagline || "—"} · AED {b.price}</Text>
             </View>
@@ -296,10 +296,10 @@ function BasketForm({ item, onSave, onClose }: { item: AdminBasket; onSave: (b: 
       <Field label="Price (AED)" value={String(form.price)} onChange={(v) => set("price", parseFloat(v) || 0)} keyboardType="numeric" />
       <Field label="Items — comma separated (display only)" value={form.itemsStr} onChange={(v) => set("itemsStr", v)} multiline />
       <Field label="Shopify Handles — comma separated (live products)" value={form.shopifyHandlesStr} onChange={(v) => set("shopifyHandlesStr", v)} multiline placeholder="royco-mchuzi-mix, unga-2kg, blue-band-500g" />
+      <ImageUploadField imageKey={`basket:${form.id}`} />
       <LifestyleImagePicker value={form.lifestyleImageKey ?? ""} onChange={(v) => set("lifestyleImageKey", v)} />
       <ColorField label="Card colour" value={form.cardColor} onChange={(v) => set("cardColor", v)} />
-      <ImageUploadField imageKey={`basket:${form.id}`} />
-      <PickerField label="Country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
+      <CountriesField values={form.countries} onChange={(v) => set("countries", v)} />
       <ToggleRow label="Active" value={form.active} onChange={(v) => set("active", v)} />
     </FormSheet>
   );
@@ -310,7 +310,7 @@ function MealsTab({ content, onChange }: { content: AppContentData; onChange: (d
   const [editItem, setEditItem] = useState<AdminMeal | null>(null);
 
   const openAdd = () => setEditItem({
-    id: uid(), country: "all", lifestyleImageKey: "lifestyle-ugali", name: "", description: "",
+    id: uid(), countries: ["all"], lifestyleImageKey: "lifestyle-ugali", name: "", description: "",
     prepTime: "15 min", cookTime: "30 min", servings: 4, ingredients: [], steps: [], active: true, order: content.meals.length + 1,
   });
 
@@ -345,7 +345,7 @@ function MealsTab({ content, onChange }: { content: AppContentData; onChange: (d
         {sorted.map((m, i) => (
           <View key={m.id} style={[styles.listItem, !m.active && { opacity: 0.45 }]}>
             <View style={{ flex: 1 }}>
-              <CountryBadge value={m.country} accent />
+              <CountryBadge value={m.countries} accent />
               <Text style={styles.listItemTitle}>{m.name || "(no name)"}</Text>
               <Text style={styles.listItemSub}>{m.prepTime} prep · {m.cookTime} cook · serves {m.servings}</Text>
             </View>
@@ -383,9 +383,9 @@ function MealForm({ item, onSave, onClose }: { item: AdminMeal; onSave: (m: Admi
     <FormSheet title={item.name ? "Edit Meal" : "New Meal"} onSave={save} onClose={onClose}>
       <Field label="Name" value={form.name} onChange={(v) => set("name", v)} />
       <Field label="Description" value={form.description} onChange={(v) => set("description", v)} multiline />
-      <LifestyleImagePicker value={form.lifestyleImageKey ?? ""} onChange={(v) => set("lifestyleImageKey", v)} />
       <ImageUploadField imageKey={`meal:${form.id}`} />
-      <PickerField label="Country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
+      <LifestyleImagePicker value={form.lifestyleImageKey ?? ""} onChange={(v) => set("lifestyleImageKey", v)} />
+      <CountriesField values={form.countries} onChange={(v) => set("countries", v)} />
       <Field label="Prep Time" value={form.prepTime} onChange={(v) => set("prepTime", v)} placeholder="e.g. 15 min" />
       <Field label="Cook Time" value={form.cookTime} onChange={(v) => set("cookTime", v)} placeholder="e.g. 30 min" />
       <Field label="Serves" value={String(form.servings)} onChange={(v) => set("servings", parseInt(v) || 1)} keyboardType="numeric" />
@@ -402,7 +402,7 @@ function CategoriesTab({ content, onChange }: { content: AppContentData; onChang
   const [editItem, setEditItem] = useState<AdminCategory | null>(null);
 
   const openAdd = () => setEditItem({
-    id: uid(), country: "kenya", name: "", icon: "nutrition",
+    id: uid(), countries: ["kenya"], name: "", icon: "nutrition",
     keywords: [], active: true, order: content.categories.length + 1,
   });
 
@@ -422,8 +422,9 @@ function CategoriesTab({ content, onChange }: { content: AppContentData; onChang
   const move = (id: string, dir: -1 | 1) => {
     const item = content.categories.find((c) => c.id === id);
     if (!item) return;
+    const primaryCountry = item.countries[0] ?? "all";
     const sameCountry = [...content.categories]
-      .filter((c) => c.country === item.country)
+      .filter((c) => (c.countries[0] ?? "all") === primaryCountry)
       .sort((a, b) => a.order - b.order);
     const idx = sameCountry.findIndex((c) => c.id === id);
     const swap = idx + dir;
@@ -437,15 +438,17 @@ function CategoriesTab({ content, onChange }: { content: AppContentData; onChang
 
   const sorted = [...content.categories].sort((a, b) => {
     const order = ["uganda", "kenya", "ethiopia", "other", "all"];
-    const ca = order.indexOf(a.country); const cb = order.indexOf(b.country);
+    const ca = order.indexOf(a.countries[0] ?? "all");
+    const cb = order.indexOf(b.countries[0] ?? "all");
     if (ca !== cb) return ca - cb;
     return a.order - b.order;
   });
 
+  const primaryCountry = (c: AdminCategory) => c.countries[0] ?? "all";
   const isFirstInCountry = (c: AdminCategory) =>
-    sorted.filter((x) => x.country === c.country)[0]?.id === c.id;
+    sorted.filter((x) => primaryCountry(x) === primaryCountry(c))[0]?.id === c.id;
   const isLastInCountry = (c: AdminCategory) => {
-    const group = sorted.filter((x) => x.country === c.country);
+    const group = sorted.filter((x) => primaryCountry(x) === primaryCountry(c));
     return group[group.length - 1]?.id === c.id;
   };
 
@@ -458,7 +461,7 @@ function CategoriesTab({ content, onChange }: { content: AppContentData; onChang
         {sorted.map((c) => (
           <View key={c.id} style={[styles.listItem, !c.active && { opacity: 0.45 }]}>
             <View style={{ flex: 1 }}>
-              <CountryBadge value={c.country} />
+              <CountryBadge value={c.countries} />
               <Text style={styles.listItemTitle}>{c.name || "(no name)"}</Text>
               <Text style={styles.listItemSub} numberOfLines={1}>{c.keywords.join(", ") || "no keywords"}</Text>
               {c.shopifyCollectionHandle && (
@@ -491,7 +494,7 @@ function CategoryForm({ item, onSave, onClose }: { item: AdminCategory; onSave: 
     <FormSheet title={item.name ? "Edit Category" : "New Category"} onSave={save} onClose={onClose}>
       <Field label="Category Name" value={form.name} onChange={(v) => set("name", v)} placeholder="e.g. Flours" />
       <Field label="Icon (Ionicons name)" value={form.icon} onChange={(v) => set("icon", v)} placeholder="e.g. nutrition, flask, leaf" />
-      <PickerField label="Country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
+      <CountriesField values={form.countries} onChange={(v) => set("countries", v)} />
       <Field label="Keywords — comma separated" value={form.keywordsStr} onChange={(v) => set("keywordsStr", v)} multiline placeholder="flour, unga, posho, maize" />
       <Field label="Shopify Collection Handle (optional)" value={form.shopifyCollectionHandle ?? ""} onChange={(v) => set("shopifyCollectionHandle", v)} placeholder="e.g. kenyan-foodstuff" />
       <Text style={styles.fieldHint}>Future: tap on this category will fetch directly from the Shopify collection instead of keyword filtering.</Text>
@@ -551,7 +554,7 @@ function PromosTab({ content, onChange }: { content: AppContentData; onChange: (
   const promos = content.promos ?? [];
 
   const openAdd = () => setEditItem({
-    id: uid(), country: "all", title: "", subtitle: "",
+    id: uid(), countries: ["all"], title: "", subtitle: "",
     ctaLabel: "Shop Now", ctaTarget: "search", badgeText: "",
     bgColor: "#C8581C", active: false, order: promos.length + 1,
   });
@@ -595,7 +598,7 @@ function PromosTab({ content, onChange }: { content: AppContentData; onChange: (
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <CountryBadge value={p.country} accent />
+              <CountryBadge value={p.countries} accent />
               <Text style={styles.listItemTitle}>{p.title || "(no title)"}</Text>
               <Text style={styles.listItemSub}>{p.subtitle || "—"}</Text>
               <Text style={[styles.listItemSub, { color: C.primary }]}>{p.ctaLabel ?? ""} → {p.ctaTarget ?? ""}</Text>
@@ -636,7 +639,7 @@ function PromoForm({ item, onSave, onClose }: { item: AdminPromo; onSave: (p: Ad
         onChange={(v) => set("ctaTarget", v as AdminPromo["ctaTarget"])}
       />
       <ColorField label="Banner colour" value={form.bgColor} onChange={(v) => set("bgColor", v)} />
-      <PickerField label="Show to country" value={form.country} options={COUNTRY_OPTIONS.map((o) => o.value)} labels={COUNTRY_OPTIONS.map((o) => o.label)} onChange={(v) => set("country", v)} />
+      <CountriesField values={form.countries} onChange={(v) => set("countries", v)} />
       <ToggleRow label="Active — visible on home screen" value={form.active} onChange={(v) => set("active", v)} />
     </FormSheet>
   );
@@ -705,8 +708,11 @@ function LifestyleImagePicker({ value, onChange }: { value: string; onChange: (v
       .replace(/\b\w/g, (c) => c.toUpperCase());
   return (
     <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>Lifestyle Image</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+      <Text style={styles.fieldLabel}>Built-in Image</Text>
+      <Text style={[styles.fieldHint, { marginTop: 0, marginBottom: 8 }]}>
+        Pick a preset below. If you uploaded a photo above, it takes priority over this.
+      </Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
         {LIFESTYLE_KEYS.map((key) => (
           <Pressable key={key} style={[styles.pickerOption, key === value && styles.pickerOptionActive]} onPress={() => onChange(key)}>
             <Text style={[styles.pickerOptionText, key === value && styles.pickerOptionTextActive]}>{displayName(key)}</Text>
@@ -750,10 +756,42 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
   );
 }
 
-function CountryBadge({ value, accent }: { value: string; accent?: boolean }) {
+function CountriesField({ values, onChange }: { values: ContentCountry[]; onChange: (v: ContentCountry[]) => void }) {
+  const toggle = (c: ContentCountry) => {
+    if (values.includes(c)) {
+      if (values.length === 1) return;
+      onChange(values.filter((x) => x !== c));
+    } else {
+      onChange([...values, c]);
+    }
+  };
   return (
-    <View style={[styles.countryBadge, { backgroundColor: accent ? C.accent + "33" : C.primary + "33" }]}>
-      <Text style={styles.countryBadgeText}>{value}</Text>
+    <View style={styles.fieldWrap}>
+      <Text style={styles.fieldLabel}>Visible To</Text>
+      <Text style={[styles.fieldHint, { marginTop: 0, marginBottom: 8 }]}>Tap to select — choose one or more countries</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+        {COUNTRY_OPTIONS.map((opt) => {
+          const active = values.includes(opt.value);
+          return (
+            <Pressable key={opt.value} style={[styles.pickerOption, active && styles.pickerOptionActive]} onPress={() => toggle(opt.value)}>
+              <Text style={[styles.pickerOptionText, active && styles.pickerOptionTextActive]}>{opt.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function CountryBadge({ value, accent }: { value: string | string[]; accent?: boolean }) {
+  const labels = Array.isArray(value) ? value : [value];
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 5 }}>
+      {labels.map((v) => (
+        <View key={v} style={[styles.countryBadge, { backgroundColor: accent ? C.accent + "33" : C.primary + "33" }]}>
+          <Text style={styles.countryBadgeText}>{v}</Text>
+        </View>
+      ))}
     </View>
   );
 }

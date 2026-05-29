@@ -7,22 +7,48 @@ const STORAGE_KEY = "@mekazon_admin_content";
 
 const CURRENT_VERSION = DEFAULT_APP_CONTENT.version;
 
+/** Safely resolve countries array — handles legacy `country` string field from older saved data */
+function resolveCountries(item: any): string[] {
+  if (Array.isArray(item.countries) && item.countries.length > 0) return item.countries;
+  if (typeof item.country === "string") return [item.country];
+  return ["all"];
+}
+
 async function load(): Promise<AppContentData> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as AppContentData;
       if ((parsed.version ?? 0) >= CURRENT_VERSION) return parsed;
-      // v3 → v4: promos array added — preserve all existing content and inject promos from defaults
-      if ((parsed.version ?? 0) === 3) {
+
+      // v4 → v5: multi-country arrays — preserve all content, convert country string → countries array
+      if ((parsed.version ?? 0) === 4) {
         const migrated: AppContentData = {
           ...parsed,
-          promos: DEFAULT_APP_CONTENT.promos,
-          version: 4,
+          baskets: (parsed.baskets as any[]).map((b) => ({ ...b, countries: resolveCountries(b) })),
+          meals: (parsed.meals as any[]).map((m) => ({ ...m, countries: resolveCountries(m) })),
+          categories: (parsed.categories as any[]).map((c) => ({ ...c, countries: resolveCountries(c) })),
+          promos: ((parsed as any).promos ?? DEFAULT_APP_CONTENT.promos).map((p: any) => ({ ...p, countries: resolveCountries(p) })),
+          version: 5,
         };
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
         return migrated;
       }
+
+      // v3 → v5: also inject promos + convert countries
+      if ((parsed.version ?? 0) === 3) {
+        const migrated: AppContentData = {
+          ...parsed,
+          baskets: (parsed.baskets as any[]).map((b) => ({ ...b, countries: resolveCountries(b) })),
+          meals: (parsed.meals as any[]).map((m) => ({ ...m, countries: resolveCountries(m) })),
+          categories: (parsed.categories as any[]).map((c) => ({ ...c, countries: resolveCountries(c) })),
+          promos: DEFAULT_APP_CONTENT.promos,
+          version: 5,
+        };
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+
       // Older versions: full reset to defaults
     }
   } catch {
@@ -33,6 +59,10 @@ async function load(): Promise<AppContentData> {
 
 async function save(content: AppContentData): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+}
+
+function matchesCountry(countries: string[], target: HomeCountry): boolean {
+  return countries.includes(target) || countries.includes("all");
 }
 
 export const appContentService = {
@@ -46,21 +76,21 @@ export const appContentService = {
   async getBasketsForCountry(country: HomeCountry): Promise<AdminBasket[]> {
     const c = await load();
     return c.baskets
-      .filter((b) => b.active && (b.country === country || b.country === "all"))
+      .filter((b) => b.active && matchesCountry(b.countries, country))
       .sort((a, b) => a.order - b.order);
   },
 
   async getMealsForCountry(country: HomeCountry): Promise<AdminMeal[]> {
     const c = await load();
     return c.meals
-      .filter((m) => m.active && (m.country === country || m.country === "all"))
+      .filter((m) => m.active && matchesCountry(m.countries, country))
       .sort((a, b) => a.order - b.order);
   },
 
   async getCategoriesForCountry(country: HomeCountry): Promise<AdminCategory[]> {
     const c = await load();
     return c.categories
-      .filter((cat) => cat.active && cat.country === country)
+      .filter((cat) => cat.active && matchesCountry(cat.countries, country))
       .sort((a, b) => a.order - b.order);
   },
 

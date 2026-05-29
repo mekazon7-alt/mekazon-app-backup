@@ -29,7 +29,7 @@ export type ContentCountry = HomeCountry | "all";
 
 export interface AdminBasket {
   id: string;
-  country: ContentCountry;
+  countries: ContentCountry[];
   name: string;
   tagline: string;
   items: string[];
@@ -45,7 +45,7 @@ export interface AdminBasket {
 
 export interface AdminMeal {
   id: string;
-  country: ContentCountry;
+  countries: ContentCountry[];
   lifestyleImageKey: string;
   imageUrl?: string;
   name: string;
@@ -63,7 +63,7 @@ export interface AdminMeal {
 
 export interface AdminCategory {
   id: string;
-  country: ContentCountry;
+  countries: ContentCountry[];
   name: string;
   icon: string;
   /**
@@ -86,7 +86,7 @@ export interface AdminHero {
 
 export interface AdminPromo {
   id: string;
-  country: ContentCountry;
+  countries: ContentCountry[];
   title: string;
   subtitle?: string;
   ctaLabel?: string;

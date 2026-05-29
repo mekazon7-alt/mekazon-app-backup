@@ -23,6 +23,11 @@ const AppContentContext = createContext<AppContentContextType>({
   reload: async () => {},
 });
 
+function matchesCountry(countries: string[] | undefined, target: HomeCountry): boolean {
+  if (!countries || countries.length === 0) return false;
+  return countries.includes(target) || countries.includes("all");
+}
+
 export function AppContentProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppContentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +49,7 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
     (country: HomeCountry): AdminBasket[] => {
       if (!data) return [];
       return data.baskets
-        .filter((b) => b.active && (b.country === country || b.country === "all"))
+        .filter((b) => b.active && matchesCountry(b.countries, country))
         .sort((a, b) => a.order - b.order);
     },
     [data]
@@ -54,7 +59,7 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
     (country: HomeCountry): AdminMeal[] => {
       if (!data) return [];
       return data.meals
-        .filter((m) => m.active && (m.country === country || m.country === "all"))
+        .filter((m) => m.active && matchesCountry(m.countries, country))
         .sort((a, b) => a.order - b.order);
     },
     [data]
@@ -63,11 +68,8 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
   const getCategoriesForCountry = useCallback(
     (country: HomeCountry): AdminCategory[] => {
       if (!data) return [];
-      // Strict match — only return categories for this specific country.
-      // "all" categories are shown only when homeCountry === "all" (Show Everything).
-      // This prevents doubles when country-specific + "all" share the same category name.
       return data.categories
-        .filter((c) => c.active && c.country === country)
+        .filter((c) => c.active && matchesCountry(c.countries, country))
         .sort((a, b) => a.order - b.order);
     },
     [data]
@@ -77,7 +79,7 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
     (country: HomeCountry) => {
       if (!data?.promos) return [];
       return data.promos
-        .filter((p) => p.active && (p.country === country || p.country === "all"))
+        .filter((p) => p.active && matchesCountry(p.countries, country))
         .sort((a, b) => a.order - b.order);
     },
     [data]

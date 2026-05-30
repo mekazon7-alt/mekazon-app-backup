@@ -14,19 +14,29 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     },
-    "lib": ["ESNext", "DOM"],
-    "types": ["react", "react-native"]
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "types": [
+      "react",
+      "react-native"
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts"
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
     ".expo"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

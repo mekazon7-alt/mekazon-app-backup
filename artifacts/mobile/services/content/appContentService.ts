@@ -1,67 +1,123 @@
+/**
+ * App Content Service — Firebase-first with local cache fallback
+ * ─────────────────────────────────────────────────────────────────────────────
+ * BEFORE:  AsyncStorage only — admin edits visible on one device only.
+ * NOW:     Firebase Firestore — admin edits visible to ALL users instantly.
+ *
+ * STRATEGY:
+ *   1. On every app launch, try to fetch from Firestore (network)
+ *   2. If successful → update local AsyncStorage cache → use this data
+ *   3. If network fails → fall back to local cache (last known good)
+ *   4. If no cache → use hardcoded DEFAULT_APP_CONTENT
+ *
+ * ADMIN WRITES:
+ *   Admin saves → write to Firestore + update local cache
+ *   All other users see the change on next app open (or background refresh)
+ *
+ * NO CODE CHANGES NEEDED elsewhere:
+ *   AppContentContext, index.tsx, admin-content.tsx all call the same
+ *   appContentService API as before. This file is a drop-in replacement.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { AppContentData, AdminBasket, AdminMeal, AdminCategory, AdminHero } from "@/types/appContent";
+import type {
+  AppContentData,
+  AdminBasket,
+  AdminMeal,
+  AdminCategory,
+  AdminHero,
+  AdminPromo,
+} from "@/types/appContent";
 import type { HomeCountry } from "@/constants/personalization";
 import { DEFAULT_APP_CONTENT } from "./defaultContent";
+import {
+  fetchFromFirestore,
+  saveToFirestore,
+  seedFirestoreIfEmpty,
+} from "./firestoreProvider";
+import { isFirebaseConfigured } from "./firebaseConfig";
 
-const STORAGE_KEY = "@mekazon_admin_content";
-
+const CACHE_KEY = "@mekazon_content_cache_v5";
 const CURRENT_VERSION = DEFAULT_APP_CONTENT.version;
 
-/** Safely resolve countries array — handles legacy `country` string field from older saved data */
-function resolveCountries(item: any): string[] {
-  if (Array.isArray(item.countries) && item.countries.length > 0) return item.countries;
+function resolveCountries(item: Record<string, unknown>): string[] {
+  if (Array.isArray(item.countries) && (item.countries as unknown[]).length > 0)
+    return item.countries as string[];
   if (typeof item.country === "string") return [item.country];
   return ["all"];
 }
 
-async function load(): Promise<AppContentData> {
+function migrateContent(raw: AppContentData): AppContentData {
+  const version = raw.version ?? 0;
+  if (version >= CURRENT_VERSION) return raw;
+  return {
+    ...raw,
+    baskets: ((raw.baskets ?? []) as Record<string, unknown>[]).map((b) => ({
+      ...b,
+      countries: resolveCountries(b),
+    })) as AppContentData["baskets"],
+    meals: ((raw.meals ?? []) as Record<string, unknown>[]).map((m) => ({
+      ...m,
+      countries: resolveCountries(m),
+    })) as AppContentData["meals"],
+    categories: ((raw.categories ?? []) as Record<string, unknown>[]).map(
+      (c) => ({ ...c, countries: resolveCountries(c) })
+    ) as AppContentData["categories"],
+    promos:
+      ((raw as Record<string, unknown>).promos as AppContentData["promos"]) ??
+      DEFAULT_APP_CONTENT.promos,
+    version: CURRENT_VERSION,
+  };
+}
+
+async function readCache(): Promise<AppContentData | null> {
   try {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored) as AppContentData;
-      if ((parsed.version ?? 0) >= CURRENT_VERSION) return parsed;
-
-      // v4 → v5: multi-country arrays — preserve all content, convert country string → countries array
-      if ((parsed.version ?? 0) === 4) {
-        const migrated: AppContentData = {
-          ...parsed,
-          baskets: (parsed.baskets as any[]).map((b) => ({ ...b, countries: resolveCountries(b) })),
-          meals: (parsed.meals as any[]).map((m) => ({ ...m, countries: resolveCountries(m) })),
-          categories: (parsed.categories as any[]).map((c) => ({ ...c, countries: resolveCountries(c) })),
-          promos: ((parsed as any).promos ?? DEFAULT_APP_CONTENT.promos).map((p: any) => ({ ...p, countries: resolveCountries(p) })),
-          version: 5,
-        };
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-        return migrated;
-      }
-
-      // v3 → v5: also inject promos + convert countries
-      if ((parsed.version ?? 0) === 3) {
-        const migrated: AppContentData = {
-          ...parsed,
-          baskets: (parsed.baskets as any[]).map((b) => ({ ...b, countries: resolveCountries(b) })),
-          meals: (parsed.meals as any[]).map((m) => ({ ...m, countries: resolveCountries(m) })),
-          categories: (parsed.categories as any[]).map((c) => ({ ...c, countries: resolveCountries(c) })),
-          promos: DEFAULT_APP_CONTENT.promos,
-          version: 5,
-        };
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-        return migrated;
-      }
-
-      // Older versions: full reset to defaults
-    }
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return migrateContent(JSON.parse(raw) as AppContentData);
   } catch {
-    // fall through to defaults
+    return null;
   }
+}
+
+async function writeCache(data: AppContentData): Promise<void> {
+  try {
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch { /* non-critical */ }
+}
+
+async function load(): Promise<AppContentData> {
+  if (isFirebaseConfigured()) {
+    // Seed Firestore on first ever launch (no-op if already seeded)
+    seedFirestoreIfEmpty(DEFAULT_APP_CONTENT).catch(() => {});
+
+    const remote = await fetchFromFirestore();
+    if (remote) {
+      const migrated = migrateContent(remote);
+      await writeCache(migrated);
+      return migrated;
+    }
+    console.warn("[Mekazon] Firestore unavailable — using local cache");
+  }
+
+  const cached = await readCache();
+  if (cached) return cached;
   return { ...DEFAULT_APP_CONTENT };
 }
 
-async function save(content: AppContentData): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+async function save(data: AppContentData): Promise<void> {
+  await writeCache(data);
+  if (isFirebaseConfigured()) {
+    const ok = await saveToFirestore(data);
+    if (!ok) {
+      console.warn("[Mekazon] Firestore save failed — saved locally only");
+    }
+  }
 }
 
-function matchesCountry(countries: string[], target: HomeCountry): boolean {
+function matchesCountry(countries: string[] | undefined, target: HomeCountry): boolean {
+  if (!countries || countries.length === 0) return false;
   return countries.includes(target) || countries.includes("all");
 }
 
@@ -70,7 +126,19 @@ export const appContentService = {
   saveContent: save,
 
   async resetContent(): Promise<void> {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(CACHE_KEY);
+  },
+
+  async refreshFromCloud(): Promise<AppContentData> {
+    if (isFirebaseConfigured()) {
+      const remote = await fetchFromFirestore();
+      if (remote) {
+        const migrated = migrateContent(remote);
+        await writeCache(migrated);
+        return migrated;
+      }
+    }
+    return load();
   },
 
   async getBasketsForCountry(country: HomeCountry): Promise<AdminBasket[]> {
@@ -97,6 +165,13 @@ export const appContentService = {
   async getHero(country: HomeCountry): Promise<AdminHero | undefined> {
     const c = await load();
     return c.heroes.find((h) => h.country === country);
+  },
+
+  async getActivePromos(country: HomeCountry): Promise<AdminPromo[]> {
+    const c = await load();
+    return (c.promos ?? [])
+      .filter((p) => p.active && matchesCountry(p.countries, country))
+      .sort((a, b) => a.order - b.order);
   },
 
   async upsertBasket(basket: AdminBasket): Promise<void> {
@@ -149,7 +224,22 @@ export const appContentService = {
     await save(c);
   },
 
-  async reorderBaskets(country: string, orderedIds: string[]): Promise<void> {
+  async upsertPromo(promo: AdminPromo): Promise<void> {
+    const c = await load();
+    if (!c.promos) c.promos = [];
+    const idx = c.promos.findIndex((p) => p.id === promo.id);
+    if (idx >= 0) c.promos[idx] = promo;
+    else c.promos.push(promo);
+    await save(c);
+  },
+
+  async deletePromo(id: string): Promise<void> {
+    const c = await load();
+    c.promos = (c.promos ?? []).filter((p) => p.id !== id);
+    await save(c);
+  },
+
+  async reorderBaskets(_country: string, orderedIds: string[]): Promise<void> {
     const c = await load();
     orderedIds.forEach((id, i) => {
       const item = c.baskets.find((b) => b.id === id);

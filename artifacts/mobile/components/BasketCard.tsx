@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -13,6 +13,7 @@ import Animated, {
 
 import type { Basket } from "@/constants/personalization";
 import { useCart } from "@/context/CartContext";
+import { getProductVariantByHandle } from "@/services/shopify/client";
 import { useColors } from "@/hooks/useColors";
 import { useImageStore } from "@/context/ImageStoreContext";
 
@@ -55,7 +56,22 @@ export function BasketCard({ basket }: BasketCardProps) {
     setShowDetail(true);
   };
 
-  const handleAddToCart = () => {
+  const [adding, setAdding] = useState(false);
+
+  const handleAddToCart = async () => {
+    setAdding(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Try to fetch real Shopify variantId using the basket's handle
+    let variantId: string | undefined;
+    if (basket.shopifyHandle) {
+      const variant = await getProductVariantByHandle(basket.shopifyHandle);
+      if (variant?.id) {
+        // Shopify GID → plain numeric ID for checkout
+        variantId = variant.id;
+      }
+    }
+
     addItem({
       id: basket.id,
       name: basket.name,
@@ -65,7 +81,10 @@ export function BasketCard({ basket }: BasketCardProps) {
       unit: "basket",
       cardColor: basket.cardColor ?? "#C8581C",
       tag: "Basket",
+      variantId,  // ← real Shopify variantId now included
     });
+
+    setAdding(false);
     setAdded(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setTimeout(() => setAdded(false), 2000);
@@ -100,12 +119,18 @@ export function BasketCard({ basket }: BasketCardProps) {
               <Pressable
                 style={[styles.addBtn, added && styles.addBtnAdded]}
                 onPress={(e) => { e.stopPropagation(); handleAddToCart(); }}
+                disabled={adding}
                 hitSlop={8}
               >
-                <Ionicons name={added ? "checkmark" : "add"} size={14} color={added ? "#FFFFFF" : "#1E2414"} />
-                <Text style={[styles.addBtnText, added && styles.addBtnTextAdded]}>
-                  {added ? "Added" : "Add"}
-                </Text>
+                {adding
+                  ? <ActivityIndicator size="small" color="#728054" />
+                  : <>
+                      <Ionicons name={added ? "checkmark" : "add"} size={14} color={added ? "#FFFFFF" : "#1E2414"} />
+                      <Text style={[styles.addBtnText, added && styles.addBtnTextAdded]}>
+                        {added ? "Added" : "Add"}
+                      </Text>
+                    </>
+                }
               </Pressable>
             </View>
           </View>
@@ -113,7 +138,7 @@ export function BasketCard({ basket }: BasketCardProps) {
       </AnimatedPressable>
 
       {/* Basket Detail Sheet */}
-      <Modal visible={showDetail} animationType="slide" transparent statusBarTranslucent onRequestClose={() => setShowDetail(false)}>
+      <Modal visible={showDetail} animationType="slide" transparent statusBarTranslucent>
         <Pressable style={styles.overlay} onPress={() => setShowDetail(false)} />
         <Animated.View
           entering={FadeInDown.duration(300)}

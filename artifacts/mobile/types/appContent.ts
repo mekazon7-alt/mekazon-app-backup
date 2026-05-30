@@ -40,7 +40,8 @@ export interface AdminBasket {
   cardColor: string;
   active: boolean;
   order: number;
-  shopifyHandles?: string[];
+  shopifyHandle?: string;   // Shopify product handle — used to fetch variantId at checkout
+  shopifyHandles?: string[]; // legacy field, kept for backwards compat
 }
 
 export interface AdminMeal {

@@ -126,3 +126,45 @@ export async function getProductsByCollectionHandle(
   );
   return data.collection?.products.nodes ?? [];
 }
+
+// ── Single product by handle (used for basket checkout) ──────────────────────
+
+const PRODUCT_BY_HANDLE_QUERY = `
+  query ProductByHandle($handle: String!) {
+    product(handle: $handle) {
+      id
+      title
+      handle
+      variants(first: 1) {
+        nodes {
+          id
+          title
+          price { amount currencyCode }
+          availableForSale
+        }
+      }
+    }
+  }
+`;
+
+export interface ShopifyVariant {
+  id: string;           // GID: "gid://shopify/ProductVariant/XXXXXX"
+  title: string;
+  price: { amount: string; currencyCode: string };
+  availableForSale: boolean;
+}
+
+export async function getProductVariantByHandle(
+  handle: string
+): Promise<ShopifyVariant | null> {
+  if (USE_MOCK) return null;
+  try {
+    const data = await storefrontFetch<{
+      product: { variants: { nodes: ShopifyVariant[] } } | null;
+    }>(PRODUCT_BY_HANDLE_QUERY, { handle });
+    return data.product?.variants.nodes[0] ?? null;
+  } catch (err) {
+    console.warn("[Mekazon] getProductVariantByHandle failed:", err);
+    return null;
+  }
+}

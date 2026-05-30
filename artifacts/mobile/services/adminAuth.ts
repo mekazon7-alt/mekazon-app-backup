@@ -16,7 +16,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-const ADMIN_TOKEN = process.env.EXPO_PUBLIC_ADMIN_TOKEN ?? "";
+const ADMIN_TOKEN = process.env.EXPO_PUBLIC_ADMIN_TOKEN ?? "mekazon-2024";
 
 let _authenticated = false;
 

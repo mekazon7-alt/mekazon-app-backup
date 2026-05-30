@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { appContentService } from "@/services/content/appContentService";
+import { isFirebaseConfigured } from "@/services/content/firebaseConfig";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { isAdminAuthenticated, adminLogout } from "@/services/adminAuth";
 import type {
@@ -113,13 +114,25 @@ export default function AdminContentScreen() {
   const [tab, setTab] = useState<Tab>("baskets");
   const [content, setContent] = useState<AppContentData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const firebaseEnabled = isFirebaseConfigured();
 
   const load = useCallback(async () => {
     setLoading(true);
     const data = await appContentService.getContent();
     setContent(data);
     setLoading(false);
-  }, []);
+    if (firebaseEnabled) setLastSynced(new Date().toLocaleTimeString());
+  }, [firebaseEnabled]);
+
+  const handleCloudRefresh = async () => {
+    setSyncing(true);
+    const data = await appContentService.refreshFromCloud();
+    setContent(data);
+    setLastSynced(new Date().toLocaleTimeString());
+    setSyncing(false);
+  };
 
   useEffect(() => {
     if (authed) load();
@@ -189,6 +202,24 @@ export default function AdminContentScreen() {
             <Text style={styles.logoutBtn}>Logout</Text>
           </Pressable>
         </View>
+      </View>
+
+      {/* Firebase sync status banner */}
+      <View style={[styles.syncBanner, { backgroundColor: firebaseEnabled ? "#1A2A16" : "#2A1A10" }]}>
+        <View style={[styles.syncDot, { backgroundColor: firebaseEnabled ? "#4E7234" : "#C4541A" }]} />
+        <Text style={styles.syncText}>
+          {firebaseEnabled
+            ? `☁️ Firebase connected${lastSynced ? ` · Last synced ${lastSynced}` : ""}`
+            : "⚠️ Firebase not configured — changes saved locally only"}
+        </Text>
+        {firebaseEnabled && (
+          <Pressable onPress={handleCloudRefresh} disabled={syncing} style={styles.syncBtn}>
+            {syncing
+              ? <ActivityIndicator size="small" color={C.primary} />
+              : <Text style={styles.syncBtnText}>↻ Sync</Text>
+            }
+          </Pressable>
+        )}
       </View>
 
       {/* Tabs */}
@@ -849,6 +880,11 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 14, alignItems: "center" },
   resetBtn: { color: C.danger, fontSize: 13, fontWeight: "600" },
   logoutBtn: { color: C.muted, fontSize: 13, fontWeight: "600" },
+  syncBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: C.border },
+  syncDot: { width: 7, height: 7, borderRadius: 4, flexShrink: 0 },
+  syncText: { flex: 1, color: C.muted, fontSize: 11, fontWeight: "500" },
+  syncBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
+  syncBtnText: { color: C.primary, fontSize: 12, fontWeight: "700" },
   tabs: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: C.border },
   tab: { flex: 1, paddingVertical: 12, alignItems: "center" },
   tabActive: { borderBottomWidth: 2, borderBottomColor: C.primary },

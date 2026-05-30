@@ -97,12 +97,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (items.length === 0) return;
     setCheckoutLoading(true);
     try {
-      const lineItems = items
-        .filter((item) => !!item.variantId)
-        .map((item) => ({
-          variantId: item.variantId!,
-          quantity: item.quantity,
-        }));
+      const itemsWithVariant = items.filter((item) => !!item.variantId);
+      const itemsWithoutVariant = items.filter((item) => !item.variantId);
+
+      if (itemsWithoutVariant.length > 0 && itemsWithVariant.length === 0) {
+        // All items are mock/demo — open store homepage instead
+        await Linking.openURL("https://www.mekazon.com/cart");
+        return;
+      }
+
+      const lineItems = itemsWithVariant.map((item) => ({
+        variantId: item.variantId!,
+        quantity: item.quantity,
+      }));
 
       const checkoutUrl = await getCheckoutUrl(
         lineItems.length > 0 ? lineItems : []

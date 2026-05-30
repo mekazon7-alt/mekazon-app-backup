@@ -113,7 +113,7 @@ export function BasketCard({ basket }: BasketCardProps) {
       </AnimatedPressable>
 
       {/* Basket Detail Sheet */}
-      <Modal visible={showDetail} animationType="slide" transparent statusBarTranslucent>
+      <Modal visible={showDetail} animationType="slide" transparent statusBarTranslucent onRequestClose={() => setShowDetail(false)}>
         <Pressable style={styles.overlay} onPress={() => setShowDetail(false)} />
         <Animated.View
           entering={FadeInDown.duration(300)}

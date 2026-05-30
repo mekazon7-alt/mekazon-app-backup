@@ -2,7 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  useEffect,
+} from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -31,8 +37,16 @@ import type { AdminPromo } from "@/types/appContent";
 import { useImageStore } from "@/context/ImageStoreContext";
 import { getProductsByCollectionHandle } from "@/services/shopify/client";
 import { shopifyProductsToProducts } from "@/services/shopify/transforms";
-import { ONBOARDING_OPTIONS, type HomeCountry, type Product } from "@/constants/personalization";
-import { LANGUAGE_META, COUNTRY_SUGGESTED_LANGUAGE, type SupportedLanguage } from "@/lib/i18n";
+import {
+  ONBOARDING_OPTIONS,
+  type HomeCountry,
+  type Product,
+} from "@/constants/personalization";
+import {
+  LANGUAGE_META,
+  COUNTRY_SUGGESTED_LANGUAGE,
+  type SupportedLanguage,
+} from "@/lib/i18n";
 import { HERO_COPY, HOME_SECTIONS, TRUST_ITEMS } from "@/constants/appContent";
 import type { AdminMeal, AdminCategory } from "@/types/appContent";
 
@@ -63,29 +77,59 @@ const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 const READY_FOOD_IMAGES: Record<string, ReturnType<typeof require>> = {
-  uganda:   require("@/assets/images/lifestyle-matooke.png"),
-  kenya:    require("@/assets/images/lifestyle-ugali.png"),
+  uganda: require("@/assets/images/lifestyle-matooke.png"),
+  kenya: require("@/assets/images/lifestyle-ugali.png"),
   ethiopia: require("@/assets/images/lifestyle-injera.png"),
-  other:    require("@/assets/images/lifestyle-spices.png"),
-  all:      require("@/assets/images/lifestyle-spices.png"),
+  other: require("@/assets/images/lifestyle-spices.png"),
+  all: require("@/assets/images/lifestyle-spices.png"),
 };
 
 const READY_FOOD_COPY: Record<string, { dish: string; teaser: string }> = {
-  uganda:   { dish: "Rolex, Matoke & More", teaser: "Ugandan street food and home-cooked favourites, fresh from partner kitchens." },
-  kenya:    { dish: "Nyama Choma, Ugali & More", teaser: "Nairobi favourites cooked fresh and delivered to your door." },
-  ethiopia: { dish: "Injera, Tibs & More", teaser: "Authentic Ethiopian platters from trusted restaurant partners in the UAE." },
-  other:    { dish: "Jollof, Suya & More", teaser: "West and Central African cuisine from partner restaurants across the UAE." },
-  all:      { dish: "African Kitchen Coming Soon", teaser: "Fresh, authentic African meals from partner restaurants — delivered." },
+  uganda: {
+    dish: "Rolex, Matoke & More",
+    teaser:
+      "Ugandan street food and home-cooked favourites, fresh from partner kitchens.",
+  },
+  kenya: {
+    dish: "Nyama Choma, Ugali & More",
+    teaser: "Nairobi favourites cooked fresh and delivered to your door.",
+  },
+  ethiopia: {
+    dish: "Injera, Tibs & More",
+    teaser:
+      "Authentic Ethiopian platters from trusted restaurant partners in the UAE.",
+  },
+  other: {
+    dish: "Jollof, Suya & More",
+    teaser:
+      "West and Central African cuisine from partner restaurants across the UAE.",
+  },
+  all: {
+    dish: "African Kitchen Coming Soon",
+    teaser:
+      "Fresh, authentic African meals from partner restaurants — delivered.",
+  },
 };
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { homeCountry, setHomeCountry, experience, shopifyProducts, productsLoading } = useHomeCountry();
+  const {
+    homeCountry,
+    setHomeCountry,
+    experience,
+    shopifyProducts,
+    productsLoading,
+  } = useHomeCountry();
   const { totalItems } = useCart();
   const { t, language, setLanguage } = useLanguage();
   const { deliveryLabel, selectedEmirate } = useLocation();
-  const { getBasketsForCountry, getMealsForCountry, getCategoriesForCountry, getActivePromos } = useAppContent();
+  const {
+    getBasketsForCountry,
+    getMealsForCountry,
+    getCategoriesForCountry,
+    getActivePromos,
+  } = useAppContent();
   const [dismissedPromoId, setDismissedPromoId] = useState<string | null>(null);
   const { uriMap } = useImageStore();
 
@@ -107,49 +151,74 @@ export default function HomeScreen() {
   const madeForScrollRef = useRef<ScrollViewType>(null);
 
   // When a category has a shopifyCollectionHandle, fetch from that specific collection
-  const [collectionProducts, setCollectionProducts] = useState<Product[] | null>(null);
+  const [collectionProducts, setCollectionProducts] = useState<
+    Product[] | null
+  >(null);
   const [collectionLoading, setCollectionLoading] = useState(false);
 
-  const adminBaskets = homeCountry ? getBasketsForCountry(homeCountry) : (experience?.baskets ?? []);
+  const adminBaskets = homeCountry
+    ? getBasketsForCountry(homeCountry)
+    : (experience?.baskets ?? []);
   const adminMeals = homeCountry ? getMealsForCountry(homeCountry) : [];
-  const adminCategories: AdminCategory[] = homeCountry ? getCategoriesForCountry(homeCountry) : [];
-  const activePromos: AdminPromo[] = homeCountry ? getActivePromos(homeCountry) : [];
-  const currentPromo = activePromos.find((p) => p.id !== dismissedPromoId) ?? null;
+  const adminCategories: AdminCategory[] = homeCountry
+    ? getCategoriesForCountry(homeCountry)
+    : [];
+  const activePromos: AdminPromo[] = homeCountry
+    ? getActivePromos(homeCountry)
+    : [];
+  const currentPromo =
+    activePromos.find((p) => p.id !== dismissedPromoId) ?? null;
 
   const BASKET_CARD_STEP = 262;
-  const scrollBaskets = useCallback((dir: "left" | "right") => {
-    const next = dir === "right"
-      ? basketScrollX + BASKET_CARD_STEP
-      : Math.max(0, basketScrollX - BASKET_CARD_STEP);
-    basketScrollRef.current?.scrollTo({ x: next, animated: true });
-    setBasketScrollX(next);
-  }, [basketScrollX]);
+  const scrollBaskets = useCallback(
+    (dir: "left" | "right") => {
+      const next =
+        dir === "right"
+          ? basketScrollX + BASKET_CARD_STEP
+          : Math.max(0, basketScrollX - BASKET_CARD_STEP);
+      basketScrollRef.current?.scrollTo({ x: next, animated: true });
+      setBasketScrollX(next);
+    },
+    [basketScrollX],
+  );
 
   const MEAL_CARD_STEP = 190;
-  const scrollMeals = useCallback((dir: "left" | "right") => {
-    const next = dir === "right"
-      ? mealScrollX + MEAL_CARD_STEP
-      : Math.max(0, mealScrollX - MEAL_CARD_STEP);
-    mealScrollRef.current?.scrollTo({ x: next, animated: true });
-    setMealScrollX(next);
-  }, [mealScrollX]);
+  const scrollMeals = useCallback(
+    (dir: "left" | "right") => {
+      const next =
+        dir === "right"
+          ? mealScrollX + MEAL_CARD_STEP
+          : Math.max(0, mealScrollX - MEAL_CARD_STEP);
+      mealScrollRef.current?.scrollTo({ x: next, animated: true });
+      setMealScrollX(next);
+    },
+    [mealScrollX],
+  );
 
   const PRODUCT_CARD_STEP = 164;
-  const scrollCravings = useCallback((dir: "left" | "right") => {
-    const next = dir === "right"
-      ? cravingsScrollX + PRODUCT_CARD_STEP
-      : Math.max(0, cravingsScrollX - PRODUCT_CARD_STEP);
-    cravingsScrollRef.current?.scrollTo({ x: next, animated: true });
-    setCravingsScrollX(next);
-  }, [cravingsScrollX]);
+  const scrollCravings = useCallback(
+    (dir: "left" | "right") => {
+      const next =
+        dir === "right"
+          ? cravingsScrollX + PRODUCT_CARD_STEP
+          : Math.max(0, cravingsScrollX - PRODUCT_CARD_STEP);
+      cravingsScrollRef.current?.scrollTo({ x: next, animated: true });
+      setCravingsScrollX(next);
+    },
+    [cravingsScrollX],
+  );
 
-  const scrollMadeFor = useCallback((dir: "left" | "right") => {
-    const next = dir === "right"
-      ? madeForScrollX + PRODUCT_CARD_STEP
-      : Math.max(0, madeForScrollX - PRODUCT_CARD_STEP);
-    madeForScrollRef.current?.scrollTo({ x: next, animated: true });
-    setMadeForScrollX(next);
-  }, [madeForScrollX]);
+  const scrollMadeFor = useCallback(
+    (dir: "left" | "right") => {
+      const next =
+        dir === "right"
+          ? madeForScrollX + PRODUCT_CARD_STEP
+          : Math.max(0, madeForScrollX - PRODUCT_CARD_STEP);
+      madeForScrollRef.current?.scrollTo({ x: next, animated: true });
+      setMadeForScrollX(next);
+    },
+    [madeForScrollX],
+  );
 
   const firstCat = adminCategories[0]?.name ?? "";
   const activeCat = selectedCategory || firstCat;
@@ -175,7 +244,9 @@ export default function HomeScreen() {
       .finally(() => {
         if (!cancelled) setCollectionLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [activeCat, adminCategories]);
 
   const filteredProducts = useMemo(() => {
@@ -190,26 +261,42 @@ export default function HomeScreen() {
       lower.some(
         (kw) =>
           p.name.toLowerCase().includes(kw) ||
-          p.description.toLowerCase().includes(kw)
-      )
+          p.description.toLowerCase().includes(kw),
+      ),
     );
-  }, [activeCat, firstCat, shopifyProducts, adminCategories, collectionProducts]);
+  }, [
+    activeCat,
+    firstCat,
+    shopifyProducts,
+    adminCategories,
+    collectionProducts,
+  ]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
 
-  if (!experience) return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
-      <ActivityIndicator size="large" color={colors.primary} />
-    </View>
-  );
+  if (!experience)
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
 
   const heroStoredUri = uriMap["hero:" + homeCountry];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const heroImage: any = heroStoredUri ? { uri: heroStoredUri } : HERO_IMAGES[experience.heroImageKey];
+  const heroImage: any = heroStoredUri
+    ? { uri: heroStoredUri }
+    : HERO_IMAGES[experience.heroImageKey];
   // Use UAE (Asia/Dubai, UTC+4) time for the greeting, regardless of device timezone
   const uaeHour = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "Asia/Dubai" })
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Dubai" }),
   ).getHours();
   const timeGreeting =
     uaeHour >= 5 && uaeHour < 12
@@ -229,45 +316,105 @@ export default function HomeScreen() {
           <View style={styles.headerLeft}>
             <View style={styles.pillRow}>
               <Pressable
-                style={[styles.locationPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                style={[
+                  styles.locationPill,
+                  {
+                    backgroundColor: colors.secondary,
+                    borderColor: colors.border,
+                  },
+                ]}
                 onPress={() => setLocationSheetVisible(true)}
               >
                 <Ionicons name="location" size={12} color={colors.primary} />
-                <Text style={[styles.locationText, { color: colors.foreground }]}>
+                <Text
+                  style={[styles.locationText, { color: colors.foreground }]}
+                >
                   {selectedEmirate ? selectedEmirate.name : t("chooseLocation")}
                 </Text>
-                <Ionicons name="chevron-down" size={11} color={colors.mutedForeground} />
+                <Ionicons
+                  name="chevron-down"
+                  size={11}
+                  color={colors.mutedForeground}
+                />
               </Pressable>
               <Pressable
-                style={[styles.countryPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                style={[
+                  styles.countryPill,
+                  {
+                    backgroundColor: colors.secondary,
+                    borderColor: colors.border,
+                  },
+                ]}
                 onPress={() => setShowCountryPicker(true)}
               >
                 <View style={styles.countryFlagBar}>
                   {experience.flagColors.map((c, i) => (
-                    <View key={i} style={[styles.countryFlagStripe, { backgroundColor: c }]} />
+                    <View
+                      key={i}
+                      style={[styles.countryFlagStripe, { backgroundColor: c }]}
+                    />
                   ))}
                 </View>
-                <Text style={[styles.locationText, { color: colors.foreground }]}>{experience.name}</Text>
-                <Ionicons name="chevron-down" size={11} color={colors.mutedForeground} />
+                <Text
+                  style={[styles.locationText, { color: colors.foreground }]}
+                >
+                  {experience.name}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={11}
+                  color={colors.mutedForeground}
+                />
               </Pressable>
             </View>
-            <Text style={[styles.greeting, { color: colors.foreground }]}>{timeGreeting}</Text>
+            <Text style={[styles.greeting, { color: colors.foreground }]}>
+              {timeGreeting}
+            </Text>
           </View>
           <View style={styles.headerRight}>
             <Pressable
-              style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              style={[
+                styles.iconBtn,
+                {
+                  backgroundColor: colors.secondary,
+                  borderColor: colors.border,
+                },
+              ]}
               onPress={() => router.push("/(tabs)/profile")}
             >
-              <Ionicons name="person-outline" size={20} color={colors.foreground} />
+              <Ionicons
+                name="person-outline"
+                size={20}
+                color={colors.foreground}
+              />
             </Pressable>
             <Pressable
-              style={[styles.iconBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              style={[
+                styles.iconBtn,
+                {
+                  backgroundColor: colors.secondary,
+                  borderColor: colors.border,
+                },
+              ]}
               onPress={() => router.push("/(tabs)/cart")}
             >
-              <Ionicons name="bag-outline" size={20} color={colors.foreground} />
+              <Ionicons
+                name="bag-outline"
+                size={20}
+                color={colors.foreground}
+              />
               {totalItems > 0 && (
-                <View style={[styles.badge, { backgroundColor: colors.accent }]}>
-                  <Text style={[styles.badgeText, { color: colors.accentForeground }]}>{totalItems}</Text>
+                <View
+                  style={[styles.badge, { backgroundColor: colors.accent }]}
+                >
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      { color: colors.accentForeground },
+                    ]}
+                  >
+                    {totalItems}
+                  </Text>
                 </View>
               )}
             </Pressable>
@@ -275,17 +422,35 @@ export default function HomeScreen() {
         </View>
 
         {/* Hero Banner */}
-        <Animated.View entering={FadeInDown.delay(80).duration(500)} style={styles.heroBanner}>
-          <Image source={heroImage} style={styles.heroImage} contentFit="cover" />
+        <Animated.View
+          entering={FadeInDown.delay(80).duration(500)}
+          style={styles.heroBanner}
+        >
+          <Image
+            source={heroImage}
+            style={styles.heroImage}
+            contentFit="cover"
+          />
           <LinearGradient
-            colors={["rgba(247,248,242,0)", "rgba(247,248,242,0.08)", "rgba(247,248,242,0.97)"]}
+            colors={[
+              "rgba(247,248,242,0)",
+              "rgba(247,248,242,0.08)",
+              "rgba(247,248,242,0.97)",
+            ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.heroContent}>
-            <View style={[styles.heroBadge, { backgroundColor: colors.secondary }]}>
-              <View style={[styles.heroBadgeDot, { backgroundColor: colors.primary }]} />
+            <View
+              style={[styles.heroBadge, { backgroundColor: colors.secondary }]}
+            >
+              <View
+                style={[
+                  styles.heroBadgeDot,
+                  { backgroundColor: colors.primary },
+                ]}
+              />
               <Text style={[styles.heroBadgeText, { color: colors.primary }]}>
                 {experience.nativeGreeting}
               </Text>
@@ -293,12 +458,18 @@ export default function HomeScreen() {
             <Text style={[styles.heroTitle, { color: colors.foreground }]}>
               {HERO_COPY[homeCountry ?? "all"]?.title ?? HERO_COPY.all.title}
             </Text>
-            <Text style={[styles.heroTagline, { color: colors.mutedForeground }]}>
-              {HERO_COPY[homeCountry ?? "all"]?.tagline ?? HERO_COPY.all.tagline}
+            <Text
+              style={[styles.heroTagline, { color: colors.mutedForeground }]}
+            >
+              {HERO_COPY[homeCountry ?? "all"]?.tagline ??
+                HERO_COPY.all.tagline}
             </Text>
             <View style={styles.heroButtons}>
               <Pressable
-                style={[styles.heroBtnPrimary, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.heroBtnPrimary,
+                  { backgroundColor: colors.primary },
+                ]}
                 onPress={() => router.push("/(tabs)/search")}
               >
                 <Ionicons name="storefront-outline" size={14} color="#FFFFFF" />
@@ -307,13 +478,25 @@ export default function HomeScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                style={[styles.heroBtnSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  styles.heroBtnSecondary,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
                 onPress={() => router.push("/(tabs)/orders")}
               >
-                <Text style={[styles.heroBtnSecondaryText, { color: colors.foreground }]}>
+                <Text
+                  style={[
+                    styles.heroBtnSecondaryText,
+                    { color: colors.foreground },
+                  ]}
+                >
                   {HERO_COPY[homeCountry ?? "all"]?.exploreLabel ?? "My Orders"}
                 </Text>
-                <Ionicons name="arrow-forward" size={13} color={colors.foreground} />
+                <Ionicons
+                  name="arrow-forward"
+                  size={13}
+                  color={colors.foreground}
+                />
               </Pressable>
             </View>
           </View>
@@ -322,15 +505,39 @@ export default function HomeScreen() {
         {/* Search */}
         <View style={styles.searchRow}>
           <Pressable
-            style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              styles.searchBar,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
             onPress={() => router.push("/(tabs)/search")}
           >
-            <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground }]}>
+            <Ionicons
+              name="search-outline"
+              size={16}
+              color={colors.mutedForeground}
+            />
+            <Text
+              style={[
+                styles.searchPlaceholder,
+                { color: colors.mutedForeground },
+              ]}
+            >
               Search products, meals, brands...
             </Text>
-            <View style={[styles.searchFilterBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Ionicons name="options-outline" size={14} color={colors.primary} />
+            <View
+              style={[
+                styles.searchFilterBtn,
+                {
+                  backgroundColor: colors.secondary,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name="options-outline"
+                size={14}
+                color={colors.primary}
+              />
             </View>
           </Pressable>
         </View>
@@ -338,28 +545,43 @@ export default function HomeScreen() {
         {/* Promo Banner — only shown when admin has activated a promo */}
         {currentPromo && (
           <Pressable
-            style={[styles.promoBanner, { backgroundColor: currentPromo.bgColor }]}
+            style={[
+              styles.promoBanner,
+              { backgroundColor: currentPromo.bgColor },
+            ]}
             onPress={() => {
               setDismissedPromoId(currentPromo.id);
-              if (currentPromo.ctaTarget === "search") router.push("/(tabs)/search");
-              else if (currentPromo.ctaTarget === "orders") router.push("/(tabs)/orders");
+              if (currentPromo.ctaTarget === "search")
+                router.push("/(tabs)/search");
+              else if (currentPromo.ctaTarget === "orders")
+                router.push("/(tabs)/orders");
             }}
           >
             <View style={styles.promoBannerLeft}>
               {currentPromo.badgeText ? (
                 <View style={styles.promoBadge}>
-                  <Text style={styles.promoBadgeText}>{currentPromo.badgeText}</Text>
+                  <Text style={styles.promoBadgeText}>
+                    {currentPromo.badgeText}
+                  </Text>
                 </View>
               ) : null}
               <Text style={styles.promoBannerTitle}>{currentPromo.title}</Text>
               {currentPromo.subtitle ? (
-                <Text style={styles.promoBannerSub}>{currentPromo.subtitle}</Text>
+                <Text style={styles.promoBannerSub}>
+                  {currentPromo.subtitle}
+                </Text>
               ) : null}
               {currentPromo.ctaLabel ? (
-                <Text style={styles.promoBannerCta}>{currentPromo.ctaLabel} →</Text>
+                <Text style={styles.promoBannerCta}>
+                  {currentPromo.ctaLabel} →
+                </Text>
               ) : null}
             </View>
-            <Pressable style={styles.promoDismiss} onPress={() => setDismissedPromoId(currentPromo.id)} hitSlop={10}>
+            <Pressable
+              style={styles.promoDismiss}
+              onPress={() => setDismissedPromoId(currentPromo.id)}
+              hitSlop={10}
+            >
               <Text style={styles.promoDismissText}>×</Text>
             </Pressable>
           </Pressable>
@@ -377,12 +599,24 @@ export default function HomeScreen() {
                     style={[
                       styles.categoryChip,
                       isActive
-                        ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                        : { backgroundColor: colors.card, borderColor: colors.border },
+                        ? {
+                            backgroundColor: colors.primary,
+                            borderColor: colors.primary,
+                          }
+                        : {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
                     ]}
                     onPress={() => {
-                      if (cat.name === "Ready Food") { setShowReadyFood(true); return; }
-                      if (cat.name === "Deals") { setShowDeals(true); return; }
+                      if (cat.name === "Ready Food") {
+                        setShowReadyFood(true);
+                        return;
+                      }
+                      if (cat.name === "Deals") {
+                        setShowDeals(true);
+                        return;
+                      }
                       setSelectedCategory(isActive ? "" : cat.name);
                     }}
                   >
@@ -404,7 +638,11 @@ export default function HomeScreen() {
               })}
             </View>
             {collectionLoading && (
-              <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 6, marginLeft: 22 }} />
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={{ marginTop: 6, marginLeft: 22 }}
+              />
             )}
           </View>
         )}
@@ -424,7 +662,12 @@ export default function HomeScreen() {
                 nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScroll}
-                onScroll={(e) => setBasketScrollX(e.nativeEvent.contentOffset.x)}
+                onScroll={(e) =>
+                  setBasketScrollX(e.nativeEvent.contentOffset.x)
+                }
+                onMomentumScrollEnd={(e) =>
+                  setBasketScrollX(e.nativeEvent.contentOffset.x)
+                }
                 scrollEventThrottle={32}
               >
                 {adminBaskets.map((basket) => (
@@ -433,18 +676,40 @@ export default function HomeScreen() {
               </ScrollView>
               {basketScrollX > 10 && (
                 <Pressable
-                  style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[
+                    styles.basketArrow,
+                    styles.basketArrowLeft,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   onPress={() => scrollBaskets("left")}
                 >
-                  <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+                  <Ionicons
+                    name="chevron-back"
+                    size={16}
+                    color={colors.foreground}
+                  />
                 </Pressable>
               )}
               {adminBaskets.length > 1 && (
                 <Pressable
-                  style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[
+                    styles.basketArrow,
+                    styles.basketArrowRight,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   onPress={() => scrollBaskets("right")}
                 >
-                  <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.foreground}
+                  />
                 </Pressable>
               )}
             </View>
@@ -462,6 +727,19 @@ export default function HomeScreen() {
             <View style={styles.productsLoader}>
               <ActivityIndicator size="small" color={colors.primary} />
             </View>
+          ) : filteredProducts.length === 0 ? (
+            <View style={styles.productsLoader}>
+              <Text
+                style={{
+                  color: "#728054",
+                  fontSize: 13,
+                  textAlign: "center",
+                  paddingHorizontal: 20,
+                }}
+              >
+                Nothing here yet — check back soon
+              </Text>
+            </View>
           ) : (
             <View style={styles.basketScrollWrapper}>
               <ScrollView
@@ -470,7 +748,12 @@ export default function HomeScreen() {
                 nestedScrollEnabled
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScroll}
-                onScroll={(e) => setCravingsScrollX(e.nativeEvent.contentOffset.x)}
+                onScroll={(e) =>
+                  setCravingsScrollX(e.nativeEvent.contentOffset.x)
+                }
+                onMomentumScrollEnd={(e) =>
+                  setCravingsScrollX(e.nativeEvent.contentOffset.x)
+                }
                 scrollEventThrottle={32}
               >
                 {filteredProducts.slice(0, 4).map((product) => (
@@ -479,18 +762,40 @@ export default function HomeScreen() {
               </ScrollView>
               {cravingsScrollX > 10 && (
                 <Pressable
-                  style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[
+                    styles.basketArrow,
+                    styles.basketArrowLeft,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   onPress={() => scrollCravings("left")}
                 >
-                  <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+                  <Ionicons
+                    name="chevron-back"
+                    size={16}
+                    color={colors.foreground}
+                  />
                 </Pressable>
               )}
               {filteredProducts.length > 2 && (
                 <Pressable
-                  style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[
+                    styles.basketArrow,
+                    styles.basketArrowRight,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   onPress={() => scrollCravings("right")}
                 >
-                  <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.foreground}
+                  />
                 </Pressable>
               )}
             </View>
@@ -513,11 +818,16 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScroll}
                 onScroll={(e) => setMealScrollX(e.nativeEvent.contentOffset.x)}
+                onMomentumScrollEnd={(e) =>
+                  setMealScrollX(e.nativeEvent.contentOffset.x)
+                }
                 scrollEventThrottle={32}
               >
                 {adminMeals.map((meal) => {
                   const mealStoredUri = uriMap["meal:" + meal.id];
-                  const image = mealStoredUri ? { uri: mealStoredUri } : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
+                  const image = mealStoredUri
+                    ? { uri: mealStoredUri }
+                    : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
                   if (!image) return null;
                   return (
                     <Pressable
@@ -525,7 +835,11 @@ export default function HomeScreen() {
                       style={styles.inspirationCard}
                       onPress={() => setSelectedMeal(meal)}
                     >
-                      <Image source={image} style={styles.inspirationImage} contentFit="cover" />
+                      <Image
+                        source={image}
+                        style={styles.inspirationImage}
+                        contentFit="cover"
+                      />
                       <LinearGradient
                         colors={["transparent", "rgba(20,24,16,0.72)"]}
                         style={StyleSheet.absoluteFill}
@@ -533,8 +847,14 @@ export default function HomeScreen() {
                       <View style={styles.inspirationTextWrap}>
                         <Text style={styles.inspirationLabel}>{meal.name}</Text>
                         <View style={styles.inspirationCta}>
-                          <Text style={styles.inspirationCtaText}>See recipe</Text>
-                          <Ionicons name="arrow-forward" size={10} color="rgba(255,255,255,0.9)" />
+                          <Text style={styles.inspirationCtaText}>
+                            See recipe
+                          </Text>
+                          <Ionicons
+                            name="arrow-forward"
+                            size={10}
+                            color="rgba(255,255,255,0.9)"
+                          />
                         </View>
                       </View>
                     </Pressable>
@@ -543,18 +863,40 @@ export default function HomeScreen() {
               </ScrollView>
               {mealScrollX > 10 && (
                 <Pressable
-                  style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[
+                    styles.basketArrow,
+                    styles.basketArrowLeft,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   onPress={() => scrollMeals("left")}
                 >
-                  <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+                  <Ionicons
+                    name="chevron-back"
+                    size={16}
+                    color={colors.foreground}
+                  />
                 </Pressable>
               )}
               {adminMeals.length > 1 && (
                 <Pressable
-                  style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[
+                    styles.basketArrow,
+                    styles.basketArrowRight,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   onPress={() => scrollMeals("right")}
                 >
-                  <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.foreground}
+                  />
                 </Pressable>
               )}
             </View>
@@ -576,6 +918,9 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
               onScroll={(e) => setMadeForScrollX(e.nativeEvent.contentOffset.x)}
+              onMomentumScrollEnd={(e) =>
+                setMadeForScrollX(e.nativeEvent.contentOffset.x)
+              }
               scrollEventThrottle={32}
             >
               {filteredProducts.slice(6).map((product) => (
@@ -584,29 +929,58 @@ export default function HomeScreen() {
             </ScrollView>
             {madeForScrollX > 10 && (
               <Pressable
-                style={[styles.basketArrow, styles.basketArrowLeft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  styles.basketArrow,
+                  styles.basketArrowLeft,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
                 onPress={() => scrollMadeFor("left")}
               >
-                <Ionicons name="chevron-back" size={16} color={colors.foreground} />
+                <Ionicons
+                  name="chevron-back"
+                  size={16}
+                  color={colors.foreground}
+                />
               </Pressable>
             )}
             {filteredProducts.slice(6).length > 2 && (
               <Pressable
-                style={[styles.basketArrow, styles.basketArrowRight, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  styles.basketArrow,
+                  styles.basketArrowRight,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
                 onPress={() => scrollMadeFor("right")}
               >
-                <Ionicons name="chevron-forward" size={16} color={colors.foreground} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.foreground}
+                />
               </Pressable>
             )}
           </View>
         </View>
 
         {/* Trust Bar */}
-        <View style={[styles.trustBar, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.trustBar,
+            { backgroundColor: colors.secondary, borderColor: colors.border },
+          ]}
+        >
           {TRUST_ITEMS.map((item) => (
             <View key={item.label} style={styles.trustItem}>
-              <Ionicons name={item.iconName as any} size={18} color={colors.primary} />
-              <Text style={[styles.trustText, { color: colors.mutedForeground }]}>{item.label}</Text>
+              <Ionicons
+                name={item.iconName as any}
+                size={18}
+                color={colors.primary}
+              />
+              <Text
+                style={[styles.trustText, { color: colors.mutedForeground }]}
+              >
+                {item.label}
+              </Text>
             </View>
           ))}
         </View>
@@ -618,17 +992,36 @@ export default function HomeScreen() {
       />
 
       {/* Country + Language Picker */}
-      <Modal visible={showCountryPicker} animationType="slide" transparent onRequestClose={() => setShowCountryPicker(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowCountryPicker(false)} />
+      <Modal
+        visible={showCountryPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCountryPicker(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowCountryPicker(false)}
+        />
         <Animated.View
           entering={FadeInDown.duration(300)}
           style={[styles.modalSheet, { backgroundColor: colors.card }]}
         >
           <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Your Experience</Text>
+            <View
+              style={[styles.modalHandle, { backgroundColor: colors.border }]}
+            />
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+              Your Experience
+            </Text>
 
-            <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>YOUR HOME COUNTRY</Text>
+            <Text
+              style={[
+                styles.modalSectionLabel,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              YOUR HOME COUNTRY
+            </Text>
             {ONBOARDING_OPTIONS.map((option) => {
               const isSelected = homeCountry === option.id;
               return (
@@ -637,38 +1030,77 @@ export default function HomeScreen() {
                   style={[
                     styles.modalOption,
                     {
-                      backgroundColor: isSelected ? colors.secondary : "transparent",
+                      backgroundColor: isSelected
+                        ? colors.secondary
+                        : "transparent",
                       borderColor: isSelected ? colors.primary : colors.border,
                     },
                   ]}
                   onPress={async () => {
                     await setHomeCountry(option.id as HomeCountry);
                     const suggested = COUNTRY_SUGGESTED_LANGUAGE[option.id];
-                    if (suggested) await setLanguage(suggested as SupportedLanguage);
+                    if (suggested)
+                      await setLanguage(suggested as SupportedLanguage);
                     setShowCountryPicker(false);
                     setSelectedCategory("");
                   }}
                 >
                   <View style={styles.optionFlagBar}>
                     {option.flagColors.map((c, i) => (
-                      <View key={i} style={[styles.optionFlagStripe, { backgroundColor: c }]} />
+                      <View
+                        key={i}
+                        style={[
+                          styles.optionFlagStripe,
+                          { backgroundColor: c },
+                        ]}
+                      />
                     ))}
                   </View>
                   <View style={styles.optionContent}>
-                    <Text style={[styles.optionName, { color: isSelected ? colors.primary : colors.foreground }]}>
+                    <Text
+                      style={[
+                        styles.optionName,
+                        {
+                          color: isSelected
+                            ? colors.primary
+                            : colors.foreground,
+                        },
+                      ]}
+                    >
                       {option.name}
                     </Text>
-                    <Text style={[styles.optionSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.optionSub,
+                        { color: colors.mutedForeground },
+                      ]}
+                      numberOfLines={1}
+                    >
                       {option.subtitle}
                     </Text>
                   </View>
-                  {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                  {isSelected && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
                 </Pressable>
               );
             })}
 
-            <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>LANGUAGE</Text>
+            <View
+              style={[styles.modalDivider, { backgroundColor: colors.border }]}
+            />
+            <Text
+              style={[
+                styles.modalSectionLabel,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              LANGUAGE
+            </Text>
             {(Object.keys(LANGUAGE_META) as SupportedLanguage[]).map((lang) => {
               const meta = LANGUAGE_META[lang];
               const isSelected = language === lang;
@@ -678,7 +1110,9 @@ export default function HomeScreen() {
                   style={[
                     styles.modalOption,
                     {
-                      backgroundColor: isSelected ? colors.secondary : "transparent",
+                      backgroundColor: isSelected
+                        ? colors.secondary
+                        : "transparent",
                       borderColor: isSelected ? colors.primary : colors.border,
                     },
                   ]}
@@ -688,14 +1122,35 @@ export default function HomeScreen() {
                   }}
                 >
                   <View style={styles.optionContent}>
-                    <Text style={[styles.optionName, { color: isSelected ? colors.primary : colors.foreground }]}>
+                    <Text
+                      style={[
+                        styles.optionName,
+                        {
+                          color: isSelected
+                            ? colors.primary
+                            : colors.foreground,
+                        },
+                      ]}
+                    >
                       {meta.nativeLabel}
                     </Text>
-                    <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>
-                      {meta.label}{meta.rtl ? " — RTL" : ""}
+                    <Text
+                      style={[
+                        styles.optionSub,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {meta.label}
+                      {meta.rtl ? " — RTL" : ""}
                     </Text>
                   </View>
-                  {isSelected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                  {isSelected && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
                 </Pressable>
               );
             })}
@@ -704,22 +1159,46 @@ export default function HomeScreen() {
       </Modal>
 
       {/* All Baskets Modal */}
-      <Modal visible={showAllBaskets} animationType="slide" transparent onRequestClose={() => setShowAllBaskets(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowAllBaskets(false)} />
+      <Modal
+        visible={showAllBaskets}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAllBaskets(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowAllBaskets(false)}
+        />
         <Animated.View
           entering={FadeInDown.duration(300)}
-          style={[styles.modalSheet, { backgroundColor: colors.background, maxHeight: "88%" }]}
+          style={[
+            styles.modalSheet,
+            { backgroundColor: colors.background, maxHeight: "88%" },
+          ]}
         >
-          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <View
+            style={[styles.modalHandle, { backgroundColor: colors.border }]}
+          />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>
             {HOME_SECTIONS.baskets.title}
           </Text>
-          <Text style={[styles.modalSectionLabel, { color: colors.mutedForeground }]}>
+          <Text
+            style={[
+              styles.modalSectionLabel,
+              { color: colors.mutedForeground },
+            ]}
+          >
             {HOME_SECTIONS.baskets.subtitle(experience.name).toUpperCase()}
           </Text>
-          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginTop: 4 }}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={{ flex: 1, marginTop: 4 }}
+          >
             {adminBaskets.map((basket) => (
-              <View key={basket.id} style={[styles.basketListItem, { borderColor: colors.border }]}>
+              <View
+                key={basket.id}
+                style={[styles.basketListItem, { borderColor: colors.border }]}
+              >
                 <BasketCard basket={basket} />
               </View>
             ))}
@@ -729,32 +1208,92 @@ export default function HomeScreen() {
       </Modal>
 
       {/* All Meals Modal */}
-      <Modal visible={showAllMeals} animationType="slide" transparent onRequestClose={() => setShowAllMeals(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowAllMeals(false)} />
+      <Modal
+        visible={showAllMeals}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAllMeals(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowAllMeals(false)}
+        />
         <Animated.View
           entering={FadeInDown.duration(300)}
-          style={[styles.modalSheet, { backgroundColor: colors.background, maxHeight: "88%" }]}
+          style={[
+            styles.modalSheet,
+            { backgroundColor: colors.background, maxHeight: "88%" },
+          ]}
         >
-          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-          <Text style={[styles.modalTitle, { color: colors.foreground }]}>Meal Inspiration</Text>
-          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, marginTop: 4 }}>
+          <View
+            style={[styles.modalHandle, { backgroundColor: colors.border }]}
+          />
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+            Meal Inspiration
+          </Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={{ flex: 1, marginTop: 4 }}
+          >
             {adminMeals.map((meal) => {
               const mealStoredUri = uriMap["meal:" + meal.id];
-              const image = mealStoredUri ? { uri: mealStoredUri } : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
+              const image = mealStoredUri
+                ? { uri: mealStoredUri }
+                : LIFESTYLE_IMAGES[meal.lifestyleImageKey];
               if (!image) return null;
               return (
                 <Pressable
                   key={meal.id}
-                  style={[styles.mealListItem, { borderBottomColor: colors.border }]}
-                  onPress={() => { setShowAllMeals(false); setSelectedMeal(meal); }}
+                  style={[
+                    styles.mealListItem,
+                    { borderBottomColor: colors.border },
+                  ]}
+                  onPress={() => {
+                    setShowAllMeals(false);
+                    setSelectedMeal(meal);
+                  }}
                 >
-                  <Image source={image} style={styles.mealListThumb} contentFit="cover" />
+                  <Image
+                    source={image}
+                    style={styles.mealListThumb}
+                    contentFit="cover"
+                  />
                   <View style={{ flex: 1, paddingLeft: 14 }}>
-                    <Text style={[styles.name, { color: colors.foreground, fontSize: 15 }]} numberOfLines={1}>{meal.name}</Text>
-                    <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 3, lineHeight: 18 }} numberOfLines={2}>{meal.description}</Text>
-                    <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 5 }}>{meal.prepTime} prep · {meal.cookTime} cook</Text>
+                    <Text
+                      style={[
+                        styles.name,
+                        { color: colors.foreground, fontSize: 15 },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {meal.name}
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.mutedForeground,
+                        fontSize: 12,
+                        marginTop: 3,
+                        lineHeight: 18,
+                      }}
+                      numberOfLines={2}
+                    >
+                      {meal.description}
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.mutedForeground,
+                        fontSize: 11,
+                        marginTop: 5,
+                      }}
+                    >
+                      {meal.prepTime} prep · {meal.cookTime} cook
+                    </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.mutedForeground}
+                  />
                 </Pressable>
               );
             })}
@@ -770,13 +1309,26 @@ export default function HomeScreen() {
         const heroImg: any = READY_FOOD_IMAGES[key] ?? READY_FOOD_IMAGES.all;
         const copy = READY_FOOD_COPY[key] ?? READY_FOOD_COPY.all;
         return (
-          <Modal visible={showReadyFood} animationType="slide" transparent onRequestClose={() => setShowReadyFood(false)}>
-            <Pressable style={styles.modalOverlay} onPress={() => setShowReadyFood(false)} />
+          <Modal
+            visible={showReadyFood}
+            animationType="slide"
+            transparent
+            onRequestClose={() => setShowReadyFood(false)}
+          >
+            <Pressable
+              style={styles.modalOverlay}
+              onPress={() => setShowReadyFood(false)}
+            />
             <Animated.View
               entering={FadeInDown.duration(300)}
-              style={[styles.modalSheet, { backgroundColor: colors.background }]}
+              style={[
+                styles.modalSheet,
+                { backgroundColor: colors.background },
+              ]}
             >
-              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+              <View
+                style={[styles.modalHandle, { backgroundColor: colors.border }]}
+              />
               {/* Food image — clear, steamy, appetising — "Coming Soon" overlaid in corner */}
               <View style={styles.readyFoodHeroWrap}>
                 <Image
@@ -789,18 +1341,42 @@ export default function HomeScreen() {
                   style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.readyFoodComingSoonBadge}>
-                  <Text style={styles.readyFoodComingSoonText}>Coming Soon</Text>
+                  <Text style={styles.readyFoodComingSoonText}>
+                    Coming Soon
+                  </Text>
                 </View>
               </View>
-              <Text style={[styles.readyFoodDish, { color: colors.foreground }]}>{copy.dish}</Text>
-              <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginTop: 6 }}>
+              <Text
+                style={[styles.readyFoodDish, { color: colors.foreground }]}
+              >
+                {copy.dish}
+              </Text>
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontSize: 14,
+                  lineHeight: 22,
+                  marginTop: 6,
+                }}
+              >
                 {copy.teaser}
               </Text>
-              <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 20, marginTop: 10 }}>
-                We are building partnerships with African restaurants across the UAE. Be the first to know when it launches.
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontSize: 13,
+                  lineHeight: 20,
+                  marginTop: 10,
+                }}
+              >
+                We are building partnerships with African restaurants across the
+                UAE. Be the first to know when it launches.
               </Text>
               <Pressable
-                style={[styles.readyFoodBtn, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.readyFoodBtn,
+                  { backgroundColor: colors.primary },
+                ]}
                 onPress={() => setShowReadyFood(false)}
               >
                 <Text style={styles.readyFoodBtnText}>Got It</Text>
@@ -811,13 +1387,23 @@ export default function HomeScreen() {
       })()}
 
       {/* Deals Coming Soon Modal */}
-      <Modal visible={showDeals} animationType="slide" transparent onRequestClose={() => setShowDeals(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setShowDeals(false)} />
+      <Modal
+        visible={showDeals}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowDeals(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowDeals(false)}
+        />
         <Animated.View
           entering={FadeInDown.duration(300)}
           style={[styles.modalSheet, { backgroundColor: colors.background }]}
         >
-          <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+          <View
+            style={[styles.modalHandle, { backgroundColor: colors.border }]}
+          />
           <View style={styles.readyFoodHeroWrap}>
             <Image
               source={LIFESTYLE_IMAGES["lifestyle-spices"]}
@@ -832,12 +1418,30 @@ export default function HomeScreen() {
               <Text style={styles.readyFoodComingSoonText}>Coming Soon</Text>
             </View>
           </View>
-          <Text style={[styles.readyFoodDish, { color: colors.foreground }]}>Deals & Weekly Offers</Text>
-          <Text style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginTop: 6 }}>
-            We are curating exclusive weekly deals and bundles for the African diaspora community in the UAE.
+          <Text style={[styles.readyFoodDish, { color: colors.foreground }]}>
+            Deals & Weekly Offers
           </Text>
-          <Text style={{ color: colors.mutedForeground, fontSize: 13, lineHeight: 20, marginTop: 10 }}>
-            Check back soon — great prices on your favourite products are on the way.
+          <Text
+            style={{
+              color: colors.mutedForeground,
+              fontSize: 14,
+              lineHeight: 22,
+              marginTop: 6,
+            }}
+          >
+            We are curating exclusive weekly deals and bundles for the African
+            diaspora community in the UAE.
+          </Text>
+          <Text
+            style={{
+              color: colors.mutedForeground,
+              fontSize: 13,
+              lineHeight: 20,
+              marginTop: 10,
+            }}
+          >
+            Check back soon — great prices on your favourite products are on the
+            way.
           </Text>
           <Pressable
             style={[styles.readyFoodBtn, { backgroundColor: colors.primary }]}
@@ -849,91 +1453,197 @@ export default function HomeScreen() {
       </Modal>
 
       {/* Meal Recipe Modal */}
-      <Modal visible={!!selectedMeal} animationType="slide" transparent onRequestClose={() => setSelectedMeal(null)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setSelectedMeal(null)} />
-        {selectedMeal && (() => {
-          const recipeStoredUri = uriMap["meal:" + selectedMeal.id];
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const image: any = recipeStoredUri ? { uri: recipeStoredUri } : LIFESTYLE_IMAGES[selectedMeal.lifestyleImageKey];
-          return (
-            <Animated.View
-              entering={FadeInDown.duration(300)}
-              style={[styles.recipeSheet, { backgroundColor: colors.background }]}
-            >
-              <View style={styles.recipeHeroWrap}>
-                {image && (
-                  <Image source={image} style={styles.recipeHeroImage} contentFit="cover" />
-                )}
-                <LinearGradient
-                  colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.55)"]}
-                  style={StyleSheet.absoluteFill}
-                />
-                <Pressable
-                  style={[styles.recipeCloseBtn, { backgroundColor: "rgba(0,0,0,0.35)" }]}
-                  onPress={() => setSelectedMeal(null)}
-                >
-                  <Ionicons name="close" size={20} color="#FFFFFF" />
-                </Pressable>
-                <View style={styles.recipeHeroContent}>
-                  <Text style={styles.recipeHeroTitle}>{selectedMeal.name}</Text>
-                  <View style={styles.recipeMeta}>
-                    <View style={styles.recipeMetaItem}>
-                      <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.85)" />
-                      <Text style={styles.recipeMetaText}>{selectedMeal.prepTime} prep</Text>
-                    </View>
-                    <View style={styles.recipeMetaItem}>
-                      <Ionicons name="flame-outline" size={13} color="rgba(255,255,255,0.85)" />
-                      <Text style={styles.recipeMetaText}>{selectedMeal.cookTime} cook</Text>
-                    </View>
-                    <View style={styles.recipeMetaItem}>
-                      <Ionicons name="people-outline" size={13} color="rgba(255,255,255,0.85)" />
-                      <Text style={styles.recipeMetaText}>Serves {selectedMeal.servings}</Text>
+      <Modal
+        visible={!!selectedMeal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelectedMeal(null)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setSelectedMeal(null)}
+        />
+        {selectedMeal &&
+          (() => {
+            const recipeStoredUri = uriMap["meal:" + selectedMeal.id];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const image: any = recipeStoredUri
+              ? { uri: recipeStoredUri }
+              : LIFESTYLE_IMAGES[selectedMeal.lifestyleImageKey];
+            return (
+              <Animated.View
+                entering={FadeInDown.duration(300)}
+                style={[
+                  styles.recipeSheet,
+                  { backgroundColor: colors.background },
+                ]}
+              >
+                <View style={styles.recipeHeroWrap}>
+                  {image && (
+                    <Image
+                      source={image}
+                      style={styles.recipeHeroImage}
+                      contentFit="cover"
+                    />
+                  )}
+                  <LinearGradient
+                    colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.55)"]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Pressable
+                    style={[
+                      styles.recipeCloseBtn,
+                      { backgroundColor: "rgba(0,0,0,0.35)" },
+                    ]}
+                    onPress={() => setSelectedMeal(null)}
+                  >
+                    <Ionicons name="close" size={20} color="#FFFFFF" />
+                  </Pressable>
+                  <View style={styles.recipeHeroContent}>
+                    <Text style={styles.recipeHeroTitle}>
+                      {selectedMeal.name}
+                    </Text>
+                    <View style={styles.recipeMeta}>
+                      <View style={styles.recipeMetaItem}>
+                        <Ionicons
+                          name="time-outline"
+                          size={13}
+                          color="rgba(255,255,255,0.85)"
+                        />
+                        <Text style={styles.recipeMetaText}>
+                          {selectedMeal.prepTime} prep
+                        </Text>
+                      </View>
+                      <View style={styles.recipeMetaItem}>
+                        <Ionicons
+                          name="flame-outline"
+                          size={13}
+                          color="rgba(255,255,255,0.85)"
+                        />
+                        <Text style={styles.recipeMetaText}>
+                          {selectedMeal.cookTime} cook
+                        </Text>
+                      </View>
+                      <View style={styles.recipeMetaItem}>
+                        <Ionicons
+                          name="people-outline"
+                          size={13}
+                          color="rgba(255,255,255,0.85)"
+                        />
+                        <Text style={styles.recipeMetaText}>
+                          Serves {selectedMeal.servings}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
 
-              <ScrollView
-                style={{ flex: 1 }}
-                contentContainerStyle={styles.recipeBody}
-                showsVerticalScrollIndicator={false}
-              >
-                <Text style={[styles.recipeDescription, { color: colors.mutedForeground }]}>
-                  {selectedMeal.description}
-                </Text>
+                <ScrollView
+                  style={{ flex: 1 }}
+                  contentContainerStyle={styles.recipeBody}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text
+                    style={[
+                      styles.recipeDescription,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    {selectedMeal.description}
+                  </Text>
 
-                <Text style={[styles.recipeSectionTitle, { color: colors.foreground }]}>
-                  Ingredients
-                </Text>
-                {selectedMeal.ingredients.map((ing, i) => (
-                  <View key={i} style={styles.ingredientRow}>
-                    <View style={[styles.ingredientDot, { backgroundColor: colors.primary }]} />
-                    <Text style={[styles.ingredientText, { color: colors.foreground }]}>{ing}</Text>
-                  </View>
-                ))}
-
-                <Text style={[styles.recipeSectionTitle, { color: colors.foreground }]}>
-                  Method
-                </Text>
-                {selectedMeal.steps.map((step, i) => (
-                  <View key={i} style={styles.stepRow}>
-                    <View style={[styles.stepNumber, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                      <Text style={[styles.stepNumberText, { color: colors.primary }]}>{i + 1}</Text>
+                  <Text
+                    style={[
+                      styles.recipeSectionTitle,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    Ingredients
+                  </Text>
+                  {selectedMeal.ingredients.map((ing, i) => (
+                    <View key={i} style={styles.ingredientRow}>
+                      <View
+                        style={[
+                          styles.ingredientDot,
+                          { backgroundColor: colors.primary },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.ingredientText,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {ing}
+                      </Text>
                     </View>
-                    <Text style={[styles.stepText, { color: colors.foreground }]}>{step}</Text>
-                  </View>
-                ))}
+                  ))}
 
-                {selectedMeal.tip && (
-                  <View style={[styles.recipeTip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                    <Ionicons name="bulb-outline" size={16} color={colors.primary} />
-                    <Text style={[styles.recipeTipText, { color: colors.foreground }]}>{selectedMeal.tip}</Text>
-                  </View>
-                )}
-              </ScrollView>
-            </Animated.View>
-          );
-        })()}
+                  <Text
+                    style={[
+                      styles.recipeSectionTitle,
+                      { color: colors.foreground },
+                    ]}
+                  >
+                    Method
+                  </Text>
+                  {selectedMeal.steps.map((step, i) => (
+                    <View key={i} style={styles.stepRow}>
+                      <View
+                        style={[
+                          styles.stepNumber,
+                          {
+                            backgroundColor: colors.secondary,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.stepNumberText,
+                            { color: colors.primary },
+                          ]}
+                        >
+                          {i + 1}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[styles.stepText, { color: colors.foreground }]}
+                      >
+                        {step}
+                      </Text>
+                    </View>
+                  ))}
+
+                  {selectedMeal.tip && (
+                    <View
+                      style={[
+                        styles.recipeTip,
+                        {
+                          backgroundColor: colors.secondary,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="bulb-outline"
+                        size={16}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.recipeTipText,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {selectedMeal.tip}
+                      </Text>
+                    </View>
+                  )}
+                </ScrollView>
+              </Animated.View>
+            );
+          })()}
       </Modal>
     </View>
   );
@@ -960,7 +1670,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignSelf: "flex-start",
   },
-  countryFlagBar: { width: 12, height: 12, borderRadius: 2, overflow: "hidden", flexDirection: "row" },
+  countryFlagBar: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    overflow: "hidden",
+    flexDirection: "row",
+  },
   countryFlagStripe: { flex: 1 },
   locationPill: {
     flexDirection: "row",
@@ -1080,12 +1796,41 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 4,
   },
-  promoBadgeText: { fontSize: 9, fontWeight: "800", color: "#FFFFFF", letterSpacing: 0.8, textTransform: "uppercase" },
-  promoBannerTitle: { fontSize: 14, fontWeight: "800", color: "#FFFFFF", lineHeight: 19 },
-  promoBannerSub: { fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 16 },
-  promoBannerCta: { fontSize: 12, fontWeight: "700", color: "#FFFFFF", marginTop: 4 },
-  promoDismiss: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
-  promoDismissText: { fontSize: 20, color: "rgba(255,255,255,0.7)", lineHeight: 24 },
+  promoBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  promoBannerTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    lineHeight: 19,
+  },
+  promoBannerSub: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    lineHeight: 16,
+  },
+  promoBannerCta: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    marginTop: 4,
+  },
+  promoDismiss: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promoDismissText: {
+    fontSize: 20,
+    color: "rgba(255,255,255,0.7)",
+    lineHeight: 24,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1224,9 +1969,23 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 12,
   },
-  inspirationLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", letterSpacing: -0.2 },
-  inspirationCta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  inspirationCtaText: { color: "rgba(255,255,255,0.85)", fontSize: 11, fontWeight: "600" },
+  inspirationLabel: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  inspirationCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  inspirationCtaText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 11,
+    fontWeight: "600",
+  },
   recipeSheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -1261,7 +2020,11 @@ const styles = StyleSheet.create({
   },
   recipeMeta: { flexDirection: "row", gap: 14 },
   recipeMetaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  recipeMetaText: { fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: "500" },
+  recipeMetaText: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.85)",
+    fontWeight: "500",
+  },
   recipeBody: { padding: 22, paddingBottom: 40, gap: 6 },
   recipeDescription: { fontSize: 14, lineHeight: 21, marginBottom: 16 },
   recipeSectionTitle: {
@@ -1271,10 +2034,26 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 10,
   },
-  ingredientRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 8 },
-  ingredientDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7, flexShrink: 0 },
+  ingredientRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginBottom: 8,
+  },
+  ingredientDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    flexShrink: 0,
+  },
   ingredientText: { flex: 1, fontSize: 14, lineHeight: 20 },
-  stepRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    marginBottom: 14,
+  },
   stepNumber: {
     width: 28,
     height: 28,
@@ -1330,8 +2109,19 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 10,
   },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8, letterSpacing: -0.3 },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
   modalOption: {
     flexDirection: "row",
     alignItems: "center",

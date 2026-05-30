@@ -100,8 +100,17 @@ export default function ProfileScreen() {
 
   const handleChangeLang = async (lang: SupportedLanguage) => {
     Haptics.selectionAsync();
+    const wasRTL = LANGUAGE_META[language].rtl;
+    const willBeRTL = LANGUAGE_META[lang].rtl;
     await setLanguage(lang);
     setShowLangPicker(false);
+    if (wasRTL !== willBeRTL) {
+      Alert.alert(
+        "Restart Required",
+        "Please close and reopen the app to apply the new language layout direction.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   const handleVersionTap = () => {

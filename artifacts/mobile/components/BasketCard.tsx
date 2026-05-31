@@ -64,8 +64,8 @@ export function BasketCard({ basket }: BasketCardProps) {
 
     // Try to fetch real Shopify variantId using the basket's handle
     let variantId: string | undefined;
-    if (basket.shopifyHandle) {
-      const variant = await getProductVariantByHandle(basket.shopifyHandle);
+    if ((basket as any).shopifyHandle) {
+      const variant = await getProductVariantByHandle((basket as any).shopifyHandle);
       if (variant?.id) {
         // Shopify GID → plain numeric ID for checkout
         variantId = variant.id;

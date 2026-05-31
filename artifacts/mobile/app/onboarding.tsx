@@ -3,11 +3,11 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  Dimensions,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -15,10 +15,16 @@ import {
 import Animated, {
   FadeIn,
   FadeInDown,
-  FadeInRight,
+  FadeOut,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
   withSpring,
+  withDelay,
+  runOnJS,
+  Easing,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,9 +34,10 @@ import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalizatio
 import { Analytics } from "@/services/analytics";
 import {
   type SupportedLanguage,
-  LANGUAGE_META,
   COUNTRY_SUGGESTED_LANGUAGE,
 } from "@/lib/i18n";
+
+const { width: SW, height: SH } = Dimensions.get("window");
 
 const CARD_IMAGES: Record<string, ReturnType<typeof require>> = {
   "lifestyle-matooke": require("@/assets/images/lifestyle-matooke.png"),
@@ -39,19 +46,159 @@ const CARD_IMAGES: Record<string, ReturnType<typeof require>> = {
   "hero-pan-african": require("@/assets/images/hero-pan-african.png"),
 };
 
+const CARD_LAYOUT = [
+  { left: SW * 0.04, top: SH * 0.30, rotate: "-4deg", width: SW * 0.52, floatDelay: 0 },
+  { left: SW * 0.44, top: SH * 0.38, rotate: "3deg",  width: SW * 0.50, floatDelay: 300 },
+  { left: SW * 0.06, top: SH * 0.52, rotate: "-2deg", width: SW * 0.54, floatDelay: 600 },
+  { left: SW * 0.38, top: SH * 0.62, rotate: "5deg",  width: SW * 0.52, floatDelay: 150 },
+  { left: SW * 0.10, top: SH * 0.74, rotate: "-3deg", width: SW * 0.48, floatDelay: 450 },
+];
+
 const LANGUAGE_OPTIONS: Array<{
   id: SupportedLanguage;
   label: string;
   nativeLabel: string;
-  script: string;
 }> = [
-  { id: "en", label: "English", nativeLabel: "English", script: "Latin" },
-  { id: "ar", label: "Arabic", nativeLabel: "العربية", script: "Arabic" },
-  { id: "am", label: "Amharic", nativeLabel: "አማርኛ", script: "Ethiopic" },
-  { id: "sw", label: "Swahili", nativeLabel: "Kiswahili", script: "Latin" },
+  { id: "en", label: "English", nativeLabel: "English" },
+  { id: "ar", label: "Arabic", nativeLabel: "العربية" },
+  { id: "am", label: "Amharic", nativeLabel: "አማርኛ" },
+  { id: "sw", label: "Swahili", nativeLabel: "Kiswahili" },
 ];
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Drifting watermark word
+function DriftingWatermark() {
+  const x = useSharedValue(-SW * 0.5);
+
+  useEffect(() => {
+    x.value = withRepeat(
+      withTiming(SW * 1.2, {
+        duration: 14000,
+        easing: Easing.linear,
+      }),
+      -1,
+      false
+    );
+  }, []);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: x.value }],
+  }));
+
+  return (
+    <Animated.Text
+      pointerEvents="none"
+      style={[styles.watermark, style]}
+    >
+      MEKAZON
+    </Animated.Text>
+  );
+}
+
+function FloatingCard({
+  option,
+  layout,
+  onSelect,
+  isSelected,
+  isAnySelected,
+}: {
+  option: typeof ONBOARDING_OPTIONS[0];
+  layout: typeof CARD_LAYOUT[0];
+  onSelect: () => void;
+  isSelected: boolean;
+  isAnySelected: boolean;
+}) {
+  const floatY = useSharedValue(0);
+  const scale = useSharedValue(0);
+  const selectScale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+  const cardImage = CARD_IMAGES[option.cardImageKey];
+
+  useEffect(() => {
+    scale.value = withDelay(
+      layout.floatDelay,
+      withSpring(1, { damping: 14, stiffness: 90 })
+    );
+    floatY.value = withDelay(
+      layout.floatDelay,
+      withRepeat(
+        withSequence(
+          withTiming(-10, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(10, { duration: 2200, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        true
+      )
+    );
+  }, []);
+
+  useEffect(() => {
+    if (isSelected) {
+      selectScale.value = withSequence(
+        withSpring(1.12, { damping: 10 }),
+        withSpring(1.06, { damping: 12 })
+      );
+      opacity.value = withTiming(1, { duration: 200 });
+    } else if (isAnySelected) {
+      opacity.value = withTiming(0, { duration: 300 });
+      selectScale.value = withTiming(0.88, { duration: 300 });
+    } else {
+      opacity.value = withTiming(1, { duration: 300 });
+      selectScale.value = withSpring(1);
+    }
+  }, [isSelected, isAnySelected]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: floatY.value },
+      { scale: scale.value * selectScale.value },
+    ],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <AnimatedPressable
+      style={[
+        styles.floatingCard,
+        {
+          left: layout.left,
+          top: layout.top,
+          width: layout.width,
+          transform: [{ rotate: layout.rotate }],
+          borderColor: isSelected ? "rgba(196,84,26,0.8)" : "rgba(255,255,255,0.18)",
+          shadowColor: isSelected ? "#C4541A" : "#000",
+          shadowOpacity: isSelected ? 0.5 : 0.3,
+        },
+        animStyle,
+      ]}
+      onPress={onSelect}
+    >
+      {cardImage && (
+        <View style={styles.cardImageWrap}>
+          <Image source={cardImage} style={styles.cardImage} contentFit="cover" />
+          <LinearGradient
+            colors={["rgba(10,8,4,0)", "rgba(10,8,4,0.75)"]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      )}
+      <View style={styles.flagBar}>
+        {option.flagColors.map((color, i) => (
+          <View key={i} style={[styles.flagStripe, { backgroundColor: color }]} />
+        ))}
+      </View>
+      <View style={styles.cardTextWrap}>
+        <Text style={styles.cardName}>{option.name}</Text>
+        {isSelected && (
+          <Animated.View entering={FadeIn.duration(200)} style={styles.selectPill}>
+            <Text style={styles.selectPillText}>Entering →</Text>
+          </Animated.View>
+        )}
+      </View>
+    </AnimatedPressable>
+  );
+}
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -60,23 +207,29 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedCountry, setSelectedCountry] = useState<HomeCountry | null>(null);
   const [selectedLang, setSelectedLang] = useState<SupportedLanguage | null>(null);
+  const [immersing, setImmersing] = useState(false);
+
+  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const overlayOpacity = useSharedValue(0);
   const btnScale = useSharedValue(1);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
-
   const handleCountrySelect = (id: HomeCountry) => {
-    Haptics.selectionAsync();
+    if (immersing) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedCountry(id);
     const suggested = COUNTRY_SUGGESTED_LANGUAGE[id] as SupportedLanguage;
-    if (!selectedLang) setSelectedLang(suggested);
-  };
+    setSelectedLang(suggested);
 
-  const handleCountryContinue = () => {
-    if (!selectedCountry) return;
-    btnScale.value = withSpring(0.95, {}, () => { btnScale.value = withSpring(1); });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setStep(2);
+    setTimeout(() => {
+      setImmersing(true);
+      overlayOpacity.value = withTiming(1, { duration: 500 }, () => {
+        runOnJS(setStep)(2);
+        runOnJS(setImmersing)(false);
+        overlayOpacity.value = withTiming(0, { duration: 300 });
+      });
+    }, 600);
   };
 
   const handleFinish = async () => {
@@ -90,129 +243,117 @@ export default function OnboardingScreen() {
     router.replace("/(tabs)");
   };
 
+  const handleBack = () => {
+    if (step === 2) {
+      setStep(1);
+      setSelectedCountry(null);
+    } else {
+      router.replace("/welcome");
+    }
+  };
+
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }));
+
   const btnAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: btnScale.value }],
   }));
 
-  const selectedOption = ONBOARDING_OPTIONS.find((o) => o.id === selectedCountry);
-
   return (
-    <View style={[styles.container, { backgroundColor: "#F7F8F2" }]}>
-      {/* Step indicator */}
-      <View style={[styles.stepRow, { paddingTop: topPad + 16 }]}>
-        <Pressable
-          style={styles.backBtn}
-          onPress={() => step === 2 ? setStep(1) : router.back()}
-        >
-          <Ionicons name="arrow-back" size={20} color="#1E2414" />
-        </Pressable>
-        <View style={styles.stepDots}>
-          <View style={[styles.dot, step === 1 ? styles.dotActive : styles.dotInactive]} />
-          <View style={[styles.dot, step === 2 ? styles.dotActive : styles.dotInactive]} />
-        </View>
-        <View style={{ width: 36 }} />
-      </View>
+    <View style={styles.container}>
+      <Image
+        source={require("@/assets/images/lifestyle-spices.png")}
+        style={StyleSheet.absoluteFillObject}
+        contentFit="cover"
+      />
+      <LinearGradient
+        colors={["rgba(10,8,4,0.55)", "rgba(10,8,4,0.72)", "rgba(10,8,4,0.92)"]}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFillObject, styles.immersionOverlay, overlayStyle]}
+      />
 
       {step === 1 ? (
-        /* ── STEP 1: Choose Your Home ── */
-        <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad + 130 }]}
-          showsVerticalScrollIndicator={false}
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          exiting={FadeOut.duration(300)}
+          style={StyleSheet.absoluteFillObject}
         >
-          <Animated.View entering={FadeInDown.delay(60).duration(500)} style={styles.header}>
-            <Text style={styles.eyebrow}>{t("onboardingEyebrow")}</Text>
-            <Text style={styles.headline}>{t("onboardingHeadline")}</Text>
-            <Text style={styles.subheadline}>{t("onboardingSubtext")}</Text>
-          </Animated.View>
-
-          <View style={styles.options}>
-            {ONBOARDING_OPTIONS.map((option, index) => {
-              const isSelected = selectedCountry === option.id;
-              const cardImage = CARD_IMAGES[option.cardImageKey];
-              return (
-                <Animated.View
-                  key={option.id}
-                  entering={FadeInDown.delay(140 + index * 65).duration(420)}
-                >
-                  <AnimatedPressable
-                    style={[
-                      styles.optionCard,
-                      {
-                        borderColor: isSelected ? "#4E7234" : "#DDE8C8",
-                        backgroundColor: isSelected ? "#F0F5E8" : "#FFFFFF",
-                        shadowOpacity: isSelected ? 0.12 : 0.05,
-                      },
-                    ]}
-                    onPress={() => handleCountrySelect(option.id)}
-                  >
-                    <View style={styles.flagBar}>
-                      {option.flagColors.map((color, i) => (
-                        <View key={i} style={[styles.flagStripe, { backgroundColor: color }]} />
-                      ))}
-                    </View>
-                    <View style={styles.optionContent}>
-                      <Text style={[styles.optionName, { color: isSelected ? "#4E7234" : "#1E2414" }]}>
-                        {option.name}
-                      </Text>
-                      <Text style={[styles.optionSubtitle, { color: isSelected ? "#728054" : "#9AAA7A" }]}>
-                        {option.subtitle}
-                      </Text>
-                    </View>
-                    {cardImage && (
-                      <View style={styles.cardImageWrap}>
-                        <Image source={cardImage} style={styles.cardImage} contentFit="cover" />
-                        <LinearGradient
-                          colors={["rgba(247,248,242,0)", "rgba(247,248,242,0.6)"]}
-                          start={{ x: 1, y: 0 }}
-                          end={{ x: 0, y: 0 }}
-                          style={StyleSheet.absoluteFill}
-                        />
-                      </View>
-                    )}
-                    <View style={[
-                      styles.checkCircle,
-                      {
-                        borderColor: isSelected ? "#4E7234" : "#DDE8C8",
-                        backgroundColor: isSelected ? "#4E7234" : "transparent",
-                      },
-                    ]}>
-                      {isSelected && <Ionicons name="checkmark" size={13} color="#FFFFFF" />}
-                    </View>
-                  </AnimatedPressable>
-                </Animated.View>
-              );
-            })}
+          {/* Drifting watermark — sits behind everything */}
+          <View style={styles.watermarkRow} pointerEvents="none">
+            <DriftingWatermark />
           </View>
-        </ScrollView>
+
+          {/* Header */}
+          <View style={[styles.topHeader, { paddingTop: topPad + 12 }]}>
+            <Pressable style={styles.backBtn} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            </Pressable>
+            <Animated.View entering={FadeInDown.delay(100).duration(500)}>
+              <Text style={styles.headline}>Choose{"\n"}Your Home.</Text>
+            </Animated.View>
+          </View>
+
+          {/* Floating cards */}
+          <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+            {ONBOARDING_OPTIONS.map((option, index) => (
+              <FloatingCard
+                key={option.id}
+                option={option}
+                layout={CARD_LAYOUT[index] ?? CARD_LAYOUT[0]}
+                onSelect={() => handleCountrySelect(option.id)}
+                isSelected={selectedCountry === option.id}
+                isAnySelected={!!selectedCountry}
+              />
+            ))}
+          </View>
+
+          {/* Bottom hint */}
+          <Animated.View
+            entering={FadeInDown.delay(800).duration(500)}
+            style={[styles.bottomHint, { paddingBottom: bottomPad + 24 }]}
+          >
+            <Text style={styles.hintText}>Tap your country to enter</Text>
+          </Animated.View>
+        </Animated.View>
       ) : (
-        /* ── STEP 2: Choose Language ── */
-        <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad + 130 }]}
-          showsVerticalScrollIndicator={false}
+        <Animated.View
+          entering={FadeIn.duration(500)}
+          style={[styles.langContainer, { paddingTop: topPad + 12, paddingBottom: bottomPad + 24 }]}
         >
-          <Animated.View entering={FadeInRight.duration(380)} style={styles.header}>
-            <Text style={styles.eyebrow}>{t("langStepEyebrow")}</Text>
-            <Text style={styles.headline}>{t("langStepHeadline")}</Text>
-            <Text style={styles.subheadline}>{t("langStepSubtext")}</Text>
+          <View style={styles.langTopRow}>
+            <Pressable style={styles.backBtn} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.langHeader}>
+            <Text style={styles.headline}>Choose Your{"\n"}Language.</Text>
+            <Text style={styles.langSubtext}>Pick what feels most natural.</Text>
           </Animated.View>
 
-          <View style={styles.options}>
+          <View style={styles.langOptions}>
             {LANGUAGE_OPTIONS.map((lang, index) => {
               const isSelected = selectedLang === lang.id;
-              const meta = LANGUAGE_META[lang.id];
-              const isSuggested =
-                selectedCountry ? COUNTRY_SUGGESTED_LANGUAGE[selectedCountry] === lang.id : false;
+              const isSuggested = selectedCountry
+                ? COUNTRY_SUGGESTED_LANGUAGE[selectedCountry] === lang.id
+                : false;
               return (
                 <Animated.View
                   key={lang.id}
-                  entering={FadeInDown.delay(80 + index * 65).duration(380)}
+                  entering={FadeInDown.delay(200 + index * 80).duration(400)}
                 >
                   <Pressable
                     style={[
                       styles.langCard,
                       {
-                        borderColor: isSelected ? "#4E7234" : "#DDE8C8",
-                        backgroundColor: isSelected ? "#F0F5E8" : "#FFFFFF",
+                        borderColor: isSelected ? "#C4541A" : "rgba(255,255,255,0.15)",
+                        backgroundColor: isSelected ? "rgba(196,84,26,0.2)" : "rgba(255,255,255,0.07)",
                       },
                     ]}
                     onPress={() => {
@@ -222,17 +363,15 @@ export default function OnboardingScreen() {
                   >
                     <View style={styles.langLeft}>
                       <Text style={styles.langNative}>{lang.nativeLabel}</Text>
-                      <Text style={[styles.langLabel, { color: isSelected ? "#728054" : "#9AAA7A" }]}>
-                        {lang.label}
-                        {meta.rtl ? " — RTL" : ""}
-                        {isSuggested ? "  Suggested" : ""}
+                      <Text style={styles.langLabel}>
+                        {lang.label}{isSuggested ? "  · Suggested" : ""}
                       </Text>
                     </View>
                     <View style={[
                       styles.checkCircle,
                       {
-                        borderColor: isSelected ? "#4E7234" : "#DDE8C8",
-                        backgroundColor: isSelected ? "#4E7234" : "transparent",
+                        borderColor: isSelected ? "#C4541A" : "rgba(255,255,255,0.3)",
+                        backgroundColor: isSelected ? "#C4541A" : "transparent",
                       },
                     ]}>
                       {isSelected && <Ionicons name="checkmark" size={13} color="#FFFFFF" />}
@@ -242,189 +381,191 @@ export default function OnboardingScreen() {
               );
             })}
           </View>
-        </ScrollView>
-      )}
 
-      {/* Footer CTA */}
-      <View style={[styles.footer, { paddingBottom: bottomPad + 16 }]}>
-        <Animated.View style={btnAnimStyle}>
-          <Pressable
-            style={[
-              styles.continueBtn,
-              {
-                backgroundColor:
-                  (step === 1 ? selectedCountry : selectedLang) ? "#4E7234" : "#DDE8C8",
-              },
-            ]}
-            onPress={step === 1 ? handleCountryContinue : handleFinish}
-            disabled={step === 1 ? !selectedCountry : !selectedLang}
-          >
-            <Text style={[
-              styles.continueBtnText,
-              { color: (step === 1 ? selectedCountry : selectedLang) ? "#FFFFFF" : "#9AAA7A" },
-            ]}>
-              {step === 1
-                ? selectedOption
-                  ? t("onboardingContinue", { country: selectedOption.name })
-                  : t("onboardingSelectFirst")
-                : t("langStepBtn")}
-            </Text>
-            {(step === 1 ? selectedCountry : selectedLang) && (
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-            )}
-          </Pressable>
+          <Animated.View style={[styles.langFooter, btnAnimStyle]}>
+            <Pressable
+              style={[
+                styles.continueBtn,
+                { backgroundColor: selectedLang ? "#C4541A" : "rgba(255,255,255,0.15)" },
+              ]}
+              onPress={handleFinish}
+              disabled={!selectedLang}
+            >
+              <Text style={[
+                styles.continueBtnText,
+                { color: selectedLang ? "#FFFFFF" : "rgba(255,255,255,0.4)" },
+              ]}>
+                Enter Mekazon
+              </Text>
+              {selectedLang && <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />}
+            </Pressable>
+          </Animated.View>
         </Animated.View>
-        <Text style={styles.footerNote}>{t("onboardingFooterNote")}</Text>
-      </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  stepRow: {
+  container: {
+    flex: 1,
+    backgroundColor: "#0A0806",
+  },
+  immersionOverlay: {
+    backgroundColor: "#C4541A",
+    zIndex: 50,
+  },
+  // Watermark
+  watermarkRow: {
+    position: "absolute",
+    top: "48%",
+    left: 0,
+    right: 0,
+    overflow: "hidden",
+    zIndex: 1,
+  },
+  watermark: {
+    fontSize: 72,
+    fontWeight: "900",
+    color: "rgba(255,255,255,0.045)",
+    letterSpacing: 12,
+    textTransform: "uppercase",
+    whiteSpace: "nowrap",
+  },
+  topHeader: {
+    paddingHorizontal: 24,
+    zIndex: 10,
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  headline: {
+    fontSize: 40,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: -1.5,
+    lineHeight: 46,
+  },
+  bottomHint: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  hintText: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.45)",
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
+  floatingCard: {
+    position: "absolute",
+    borderRadius: 20,
+    borderWidth: 1.5,
+    overflow: "hidden",
+    height: 100,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  cardImageWrap: { ...StyleSheet.absoluteFillObject },
+  cardImage: { width: "100%", height: "100%" },
+  flagBar: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 5,
+    flexDirection: "column",
+  },
+  flagStripe: { flex: 1 },
+  cardTextWrap: {
+    position: "absolute",
+    bottom: 12,
+    left: 16,
+    right: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingBottom: 8,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 18,
-    backgroundColor: "#EBF0DE",
-  },
-  stepDots: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-  },
-  dot: {
-    height: 6,
-    borderRadius: 3,
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: "#4E7234",
-  },
-  dotInactive: {
-    width: 8,
-    backgroundColor: "#DDE8C8",
-  },
-  scroll: {
-    paddingHorizontal: 22,
-    paddingTop: 12,
-  },
-  header: { marginBottom: 24 },
-  eyebrow: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#C4541A",
-    letterSpacing: 0.4,
-    marginBottom: 8,
-    textTransform: "uppercase",
-  },
-  headline: {
-    fontSize: 34,
+  cardName: {
+    fontSize: 17,
     fontWeight: "800",
-    color: "#1E2414",
-    letterSpacing: -1,
-    lineHeight: 40,
-    marginBottom: 10,
+    color: "#FFFFFF",
+    letterSpacing: -0.4,
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
-  subheadline: {
+  selectPill: {
+    backgroundColor: "#C4541A",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  selectPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  langContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+  },
+  langTopRow: { marginBottom: 8 },
+  langHeader: { marginBottom: 32 },
+  langSubtext: {
     fontSize: 15,
-    color: "#728054",
+    color: "rgba(255,255,255,0.55)",
+    marginTop: 10,
     lineHeight: 22,
   },
-  options: { gap: 10 },
-  optionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 18,
-    borderWidth: 1.5,
-    overflow: "hidden",
-    height: 80,
-    shadowColor: "#1E2414",
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  flagBar: { width: 5, height: "100%", flexDirection: "column" },
-  flagStripe: { flex: 1 },
-  optionContent: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingLeft: 16,
-    paddingRight: 8,
-  },
-  optionName: {
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 3,
-    letterSpacing: -0.2,
-  },
-  optionSubtitle: { fontSize: 12, lineHeight: 16 },
-  cardImageWrap: { width: 80, height: "100%" },
-  cardImage: { width: "100%", height: "100%" },
+  langOptions: { gap: 12, flex: 1 },
   langCard: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 18,
     borderWidth: 1.5,
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    shadowColor: "#1E2414",
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
+    paddingVertical: 18,
   },
   langLeft: { flex: 1 },
   langNative: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: "800",
-    color: "#1E2414",
-    marginBottom: 4,
+    color: "#FFFFFF",
+    marginBottom: 3,
     letterSpacing: -0.4,
   },
-  langLabel: { fontSize: 12, lineHeight: 17 },
+  langLabel: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.5)",
+    lineHeight: 17,
+  },
   checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 12,
   },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 22,
-    paddingTop: 14,
-    backgroundColor: "#F7F8F2",
-    borderTopWidth: 1,
-    borderTopColor: "#DDE8C8",
-    gap: 10,
-  },
+  langFooter: { marginTop: 24 },
   continueBtn: {
-    borderRadius: 16,
-    paddingVertical: 17,
+    borderRadius: 18,
+    paddingVertical: 18,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 10,
   },
-  continueBtnText: { fontSize: 16, fontWeight: "700" },
-  footerNote: {
-    fontSize: 12,
-    color: "#9AAA7A",
-    textAlign: "center",
-    paddingBottom: 4,
-  },
+  continueBtnText: { fontSize: 17, fontWeight: "800" },
 });

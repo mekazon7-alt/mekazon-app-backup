@@ -48,6 +48,7 @@ export default function ProfileScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [showLocationSheet, setShowLocationSheet] = useState(false);
+  const [flashColor, setFlashColor] = useState<string | null>(null);
   const [notifs, setNotifs] = useState({
     weeklyBasket: session?.user.notificationPreferences.weeklyBasket ?? true,
     freshStock: session?.user.notificationPreferences.freshStock ?? false,
@@ -81,7 +82,6 @@ export default function ProfileScreen() {
     await logout();
   };
 
-  // Hidden admin access
   const [versionTapCount, setVersionTapCount] = useState(0);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPw, setAdminPw] = useState("");
@@ -92,10 +92,20 @@ export default function ProfileScreen() {
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
 
   const handleChangeCountry = async (country: HomeCountry) => {
+    if (country === homeCountry) {
+      setShowCountryPicker(false);
+      return;
+    }
     Haptics.selectionAsync();
-    await setHomeCountry(country);
-    Analytics.selectCountry(country, "profile");
+    const opt = ONBOARDING_OPTIONS.find((o) => o.id === country);
+    const col = opt?.flagColors?.[0] ?? "#C4541A";
+    setFlashColor(col);
     setShowCountryPicker(false);
+    setTimeout(async () => {
+      await setHomeCountry(country);
+      Analytics.selectCountry(country, "profile");
+      setTimeout(() => setFlashColor(null), 400);
+    }, 300);
   };
 
   const handleChangeLang = async (lang: SupportedLanguage) => {
@@ -147,7 +157,19 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: bottomPad }}>
+      {/* Country switch flash overlay */}
+      {flashColor && (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFillObject,
+            { backgroundColor: flashColor, opacity: 0.18, zIndex: 999 },
+          ]}
+        />
+      )}
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottomPad }}>
         <View style={[styles.header, { paddingTop: topPad + 12 }]}>
           <Text style={[styles.title, { color: colors.foreground }]}>{t("profileTitle")}</Text>
         </View>
@@ -303,7 +325,7 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* Menu Items */}
+        {/* Support */}
         <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Pressable
             style={[styles.menuRow, { borderBottomColor: colors.border }]}
@@ -315,17 +337,9 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* Admin Tools — only shown when admin is logged in */}
+        {/* Admin Tools */}
         {adminLoggedIn && (
           <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Pressable
-              style={[styles.menuRow, { borderBottomColor: colors.border }]}
-              onPress={() => router.push("/debug-collections")}
-            >
-              <Ionicons name="git-branch-outline" size={20} color={colors.mutedForeground} />
-              <Text style={[styles.menuLabel, { color: colors.foreground }]}>Debug: Shopify Collections</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-            </Pressable>
             <Pressable
               style={[styles.menuRow, { borderBottomColor: colors.border }]}
               onPress={() => router.push("/admin-content")}
@@ -348,18 +362,16 @@ export default function ProfileScreen() {
           Your orders and payments are handled securely through mekazon.com
         </Text>
 
-        {/* Legal links */}
         <View style={styles.legalRow}>
-          <Pressable onPress={() => Linking.openURL("https://www.mekazon.com/privacy")}>
+          <Pressable onPress={() => Linking.openURL("https://www.mekazon.com/policies/privacy-policy")}>
             <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Privacy Policy</Text>
           </Pressable>
           <View style={[styles.legalDot, { backgroundColor: colors.border }]} />
-          <Pressable onPress={() => Linking.openURL("https://www.mekazon.com/terms")}>
+          <Pressable onPress={() => Linking.openURL("https://www.mekazon.com/policies/terms-of-service")}>
             <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Terms of Use</Text>
           </Pressable>
         </View>
 
-        {/* Hidden version — tapping 5 times opens admin login */}
         <Pressable onPress={handleVersionTap} style={styles.versionWrap}>
           <Text style={[styles.versionText, { color: colors.mutedForeground }]}>
             Mekazon App v{APP_VERSION}
@@ -372,7 +384,7 @@ export default function ProfileScreen() {
         </Pressable>
       </ScrollView>
 
-      {/* ── Admin Login Modal ─────────────────────────────────────────────── */}
+      {/* Admin Login Modal */}
       <Modal visible={showAdminLogin} animationType="fade" transparent>
         <Pressable style={styles.modalOverlay} onPress={() => setShowAdminLogin(false)} />
         <Animated.View
@@ -380,7 +392,6 @@ export default function ProfileScreen() {
           style={[styles.adminLoginSheet, { backgroundColor: colors.card }]}
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-
           <View style={styles.adminLoginIcon}>
             <Ionicons name="lock-closed" size={24} color={colors.primary} />
           </View>
@@ -388,7 +399,6 @@ export default function ProfileScreen() {
           <Text style={[styles.adminLoginSub, { color: colors.mutedForeground }]}>
             Enter the admin password to manage app content
           </Text>
-
           <TextInput
             style={[
               styles.adminLoginInput,
@@ -408,11 +418,8 @@ export default function ProfileScreen() {
             autoCorrect={false}
           />
           {adminPwError && (
-            <Text style={[styles.adminPwError, { color: colors.destructive }]}>
-              Incorrect password
-            </Text>
+            <Text style={[styles.adminPwError, { color: colors.destructive }]}>Incorrect password</Text>
           )}
-
           <Pressable
             style={[styles.adminLoginBtn, { backgroundColor: colors.primary }]}
             onPress={handleAdminLogin}
@@ -420,8 +427,6 @@ export default function ProfileScreen() {
             <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
             <Text style={styles.adminLoginBtnText}>Sign In</Text>
           </Pressable>
-
-
         </Animated.View>
       </Modal>
 
@@ -434,6 +439,9 @@ export default function ProfileScreen() {
         >
           <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>{t("profileChangeHome")}</Text>
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: -4, marginBottom: 8 }}>
+            Tap a country to switch your experience
+          </Text>
           {ONBOARDING_OPTIONS.map((option) => (
             <Pressable
               key={option.id}
@@ -521,29 +529,11 @@ const styles = StyleSheet.create({
   avatarInitial: { fontSize: 30, fontWeight: "800" },
   guestName: { fontSize: 18, fontWeight: "700" },
   userPhone: { fontSize: 14, marginTop: -4 },
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 4,
-  },
+  logoutBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 20, borderWidth: 1, marginTop: 4 },
   logoutText: { fontSize: 13, fontWeight: "600" },
   signInBtn: { flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 22, paddingVertical: 12, borderRadius: 14, marginTop: 4 },
   signInText: { fontSize: 14, fontWeight: "700" },
-  testNotifBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 13,
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
+  testNotifBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 13, marginTop: 8, borderRadius: 12, borderWidth: 1 },
   testNotifText: { fontSize: 14, fontWeight: "600" },
   card: { marginHorizontal: 22, marginBottom: 14, borderRadius: 18, borderWidth: 1, padding: 18 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
@@ -559,13 +549,7 @@ const styles = StyleSheet.create({
   locationIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   locationName: { fontSize: 15, fontWeight: "700" },
   locationDelivery: { fontSize: 12, marginTop: 2, fontWeight: "500" },
-  notifRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
+  notifRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1 },
   notifLabel: { fontSize: 14, flex: 1 },
   menuSection: { marginHorizontal: 22, marginBottom: 14, borderRadius: 18, borderWidth: 1, paddingHorizontal: 18 },
   menuRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, borderBottomWidth: 1 },
@@ -577,69 +561,19 @@ const styles = StyleSheet.create({
   versionWrap: { alignItems: "center", paddingVertical: 14, paddingBottom: 4, gap: 4 },
   versionText: { fontSize: 12, fontWeight: "500" },
   versionHint: { fontSize: 11, opacity: 0.7 },
-  // Admin login modal
-  adminLoginSheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    paddingTop: 12,
-    gap: 12,
-  },
-  adminLoginIcon: {
-    alignSelf: "center",
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(78,114,52,0.12)",
-    marginTop: 8,
-  },
+  adminLoginSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingTop: 12, gap: 12 },
+  adminLoginIcon: { alignSelf: "center", width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(78,114,52,0.12)", marginTop: 8 },
   adminLoginTitle: { fontSize: 20, fontWeight: "800", textAlign: "center", letterSpacing: -0.4 },
   adminLoginSub: { fontSize: 13, textAlign: "center", lineHeight: 19, marginBottom: 4 },
-  adminLoginInput: {
-    borderWidth: 1.5,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    marginTop: 4,
-  },
+  adminLoginInput: { borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, marginTop: 4 },
   adminPwError: { fontSize: 13, textAlign: "center", marginTop: -4 },
-  adminLoginBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 14,
-    paddingVertical: 15,
-    marginTop: 4,
-  },
+  adminLoginBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 15, marginTop: 4 },
   adminLoginBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
-  devNote: {
-    flexDirection: "row",
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "flex-start",
-  },
-  devNoteText: { flex: 1, fontSize: 11, lineHeight: 17 },
-  // Shared modals
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
   modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingTop: 12, gap: 10 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12 },
-  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8, letterSpacing: -0.3 },
-  modalOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 1.5,
-    paddingVertical: 12,
-    paddingRight: 16,
-    gap: 12,
-    overflow: "hidden",
-  },
+  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 4, letterSpacing: -0.3 },
+  modalOption: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1.5, paddingVertical: 12, paddingRight: 16, gap: 12, overflow: "hidden" },
   flagBarSmall: { width: 5, height: 52, flexDirection: "column" },
   flagStripeSmall: { flex: 1 },
   modalOptionContent: { flex: 1, paddingLeft: 10 },

@@ -74,7 +74,7 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <ScrollView style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -138,7 +138,7 @@ export default function SearchScreen() {
             <View style={styles.productGrid}>
               {filtered.map((p) => (
                 <View key={p.id} style={styles.productGridItem}>
-                  <ProductCard product={p} cardStyle={styles.productGridCard} />
+                  <ProductCard product={p} cardStyle={{ width: "100%", marginRight: 0 }} />
                 </View>
               ))}
             </View>
@@ -205,10 +205,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   productGridItem: {
-    width: "48.5%",
+    width: "47.5%",
+    flexShrink: 0,
   },
   productGridCard: {
     width: "100%",
+    marginRight: 0,
   },
   loadingState: {
     alignItems: "center",

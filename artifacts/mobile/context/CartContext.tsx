@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Linking } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import React, { createContext, useCallback, useContext, useState } from "react";
 import { Analytics } from "@/services/analytics";
 
@@ -102,7 +103,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       if (itemsWithoutVariant.length > 0 && itemsWithVariant.length === 0) {
         // All items are mock/demo — open store homepage instead
-        await Linking.openURL("https://www.mekazon.com/cart");
+        await WebBrowser.openBrowserAsync("https://www.mekazon.com/cart");
         return;
       }
 
@@ -138,7 +139,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       Analytics.beginCheckout(estimated, items.length);
       await AsyncStorage.removeItem(CART_ID_KEY);
-      await Linking.openURL(checkoutUrl);
+      // Open Shopify checkout in an in-app browser sheet (user never fully leaves the app)
+      await WebBrowser.openBrowserAsync(checkoutUrl, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+        dismissButtonStyle: "close",
+        toolbarColor: "#F7F8F2",
+        controlsColor: "#4E7234",
+      });
     } catch (err) {
       console.warn("[Mekazon] Checkout error:", err);
       await Linking.openURL("https://www.mekazon.com/cart");

@@ -20,7 +20,15 @@ import {
   View,
   type ScrollView as ScrollViewType,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  withDelay,
+  Easing,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BasketCard } from "@/components/BasketCard";
@@ -110,6 +118,64 @@ const READY_FOOD_COPY: Record<string, { dish: string; teaser: string }> = {
       "Fresh, authentic African meals from partner restaurants — delivered.",
   },
 };
+
+
+// Animated cycling placeholder for search bar
+function AnimatedSearchPlaceholder({
+  suggestions,
+  color,
+}: {
+  suggestions: string[];
+  color: string;
+}) {
+  const [current, setCurrent] = React.useState(0);
+  const translateY = useSharedValue(20);
+  const opacity = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (!suggestions.length) return;
+
+    const animate = () => {
+      // Slide in from bottom
+      translateY.value = 20;
+      opacity.value = 0;
+      translateY.value = withTiming(0, { duration: 380, easing: Easing.out(Easing.cubic) });
+      opacity.value = withTiming(1, { duration: 300 });
+
+      // After pause, slide out upward
+      setTimeout(() => {
+        translateY.value = withTiming(-18, { duration: 320, easing: Easing.in(Easing.cubic) });
+        opacity.value = withTiming(0, { duration: 280 }, () => {});
+      }, 2200);
+    };
+
+    animate();
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % suggestions.length);
+      animate();
+    }, 2800);
+
+    return () => clearInterval(interval);
+  }, [suggestions]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
+  if (!suggestions.length) return null;
+
+  return (
+    <View style={{ flex: 1, overflow: "hidden", height: 20 }}>
+      <Animated.Text
+        style={[{ fontSize: 14, color }, animStyle]}
+        numberOfLines={1}
+      >
+        {suggestions[current]}
+      </Animated.Text>
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -309,167 +375,65 @@ export default function HomeScreen() {
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: bottomPad }}
+        contentContainerStyle={{ paddingBottom: bottomPad, paddingTop: 36 }}
       >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: topPad + 12 }]}>
-          <View style={styles.headerLeft}>
-            <View style={styles.pillRow}>
-              <Pressable
-                style={[
-                  styles.locationPill,
-                  {
-                    backgroundColor: colors.secondary,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setLocationSheetVisible(true)}
-              >
-                <Ionicons name="location" size={12} color={colors.primary} />
-                <Text
-                  style={[styles.locationText, { color: colors.foreground }]}
-                >
-                  {selectedEmirate ? selectedEmirate.name : t("chooseLocation")}
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={11}
-                  color={colors.mutedForeground}
-                />
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.countryPill,
-                  {
-                    backgroundColor: colors.secondary,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => setShowCountryPicker(true)}
-              >
-                <View style={styles.countryFlagBar}>
-                  {experience.flagColors.map((c, i) => (
-                    <View
-                      key={i}
-                      style={[styles.countryFlagStripe, { backgroundColor: c }]}
-                    />
-                  ))}
-                </View>
-                <Text
-                  style={[styles.locationText, { color: colors.foreground }]}
-                >
-                  {experience.name}
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={11}
-                  color={colors.mutedForeground}
-                />
-              </Pressable>
-            </View>
-            <Text style={[styles.greeting, { color: colors.foreground }]}>
-              {timeGreeting}
-            </Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Pressable
-              style={[
-                styles.iconBtn,
-                {
-                  backgroundColor: colors.secondary,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => router.push("/(tabs)/profile")}
-            >
-              <Ionicons
-                name="person-outline"
-                size={20}
-                color={colors.foreground}
-              />
-            </Pressable>
-            <Pressable
-              style={[
-                styles.iconBtn,
-                {
-                  backgroundColor: colors.secondary,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => router.push("/(tabs)/cart")}
-            >
-              <Ionicons
-                name="bag-outline"
-                size={20}
-                color={colors.foreground}
-              />
-              {totalItems > 0 && (
-                <View
-                  style={[styles.badge, { backgroundColor: colors.accent }]}
-                >
-                  <Text
-                    style={[
-                      styles.badgeText,
-                      { color: colors.accentForeground },
-                    ]}
-                  >
-                    {totalItems}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Hero Banner */}
-        <Animated.View
-          entering={FadeInDown.delay(80).duration(500)}
-          style={styles.heroBanner}
-        >
-          <Image
-            source={heroImage}
-            style={styles.heroImage}
-            contentFit="cover"
-          />
+        {/* ── COMPACT HERO: full-width image with overlay UI ── */}
+        <View style={[styles.heroBlock, { height: topPad + 260 }]}>
+          {/* Background hero image */}
+          <Image source={heroImage} style={StyleSheet.absoluteFillObject} contentFit="cover" />
           <LinearGradient
-            colors={[
-              "rgba(247,248,242,0)",
-              "rgba(247,248,242,0.08)",
-              "rgba(247,248,242,0.97)",
-            ]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={StyleSheet.absoluteFill}
+            colors={["rgba(10,8,4,0.22)", "rgba(10,8,4,0.18)", "rgba(10,8,4,0.72)"]}
+            locations={[0, 0.4, 1]}
+            style={StyleSheet.absoluteFillObject}
           />
-          <View style={styles.heroContent}>
-            <View
-              style={[styles.heroBadge, { backgroundColor: colors.secondary }]}
-            >
-              <View
-                style={[
-                  styles.heroBadgeDot,
-                  { backgroundColor: colors.primary },
-                ]}
-              />
-              <Text style={[styles.heroBadgeText, { color: colors.primary }]}>
-                {experience.nativeGreeting}
+
+          {/* Top bar: greeting LEFT, pills RIGHT */}
+          <View style={[styles.heroTopBar, { paddingTop: topPad + 6 }]}>
+            {/* Left: greeting */}
+            <View style={styles.heroTopLeft}>
+              <Text style={styles.heroTimeGreeting}>{timeGreeting}</Text>
+              <View style={styles.heroBadge}>
+                <View style={[styles.heroBadgeDot, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.heroBadgeText, { color: "#FFFFFF" }]}>
+                  {experience.nativeGreeting}
+                </Text>
+              </View>
+              <Text style={styles.heroTitle}>
+                {HERO_COPY[homeCountry ?? "all"]?.title ?? HERO_COPY.all.title}
               </Text>
             </View>
-            <Text style={[styles.heroTitle, { color: colors.foreground }]}>
-              {HERO_COPY[homeCountry ?? "all"]?.title ?? HERO_COPY.all.title}
-            </Text>
-            <Text
-              style={[styles.heroTagline, { color: colors.mutedForeground }]}
-            >
-              {HERO_COPY[homeCountry ?? "all"]?.tagline ??
-                HERO_COPY.all.tagline}
-            </Text>
+            {/* Right: location + country pills stacked */}
+            <View style={styles.heroPillsRight}>
+              <Pressable style={styles.heroPill} onPress={() => setLocationSheetVisible(true)}>
+                <Ionicons name="location" size={11} color="#FFFFFF" />
+                <Text style={styles.heroPillText}>
+                  {selectedEmirate ? selectedEmirate.name : t("chooseLocation")}
+                </Text>
+                <Ionicons name="chevron-down" size={10} color="rgba(255,255,255,0.7)" />
+              </Pressable>
+              <Pressable style={styles.heroPill} onPress={() => setShowCountryPicker(true)}>
+                <View style={styles.countryFlagBar}>
+                  {experience.flagColors.map((c, i) => (
+                    <View key={i} style={[styles.countryFlagStripe, { backgroundColor: c }]} />
+                  ))}
+                </View>
+                <Text style={styles.heroPillText}>{experience.name}</Text>
+                <Ionicons name="chevron-down" size={10} color="rgba(255,255,255,0.7)" />
+              </Pressable>
+              {totalItems > 0 && (
+                <Pressable style={styles.heroCartBadge} onPress={() => router.push("/(tabs)/cart")}>
+                  <Ionicons name="bag-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.heroCartBadgeText}>{totalItems}</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+
+          {/* Hero text content — buttons only now, title moved to top bar */}
+          <View style={styles.heroContent}>
             <View style={styles.heroButtons}>
               <Pressable
-                style={[
-                  styles.heroBtnPrimary,
-                  { backgroundColor: colors.primary },
-                ]}
+                style={[styles.heroBtnPrimary, { backgroundColor: colors.primary }]}
                 onPress={() => router.push("/(tabs)/search")}
               >
                 <Ionicons name="storefront-outline" size={14} color="#FFFFFF" />
@@ -478,68 +442,33 @@ export default function HomeScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                style={[
-                  styles.heroBtnSecondary,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
+                style={styles.heroBtnSecondary}
                 onPress={() => router.push("/(tabs)/orders")}
               >
-                <Text
-                  style={[
-                    styles.heroBtnSecondaryText,
-                    { color: colors.foreground },
-                  ]}
-                >
+                <Text style={styles.heroBtnSecondaryText}>
                   {HERO_COPY[homeCountry ?? "all"]?.exploreLabel ?? "My Orders"}
                 </Text>
-                <Ionicons
-                  name="arrow-forward"
-                  size={13}
-                  color={colors.foreground}
-                />
+                <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
               </Pressable>
             </View>
           </View>
-        </Animated.View>
 
-        {/* Search */}
-        <View style={styles.searchRow}>
-          <Pressable
-            style={[
-              styles.searchBar,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={() => router.push("/(tabs)/search")}
-          >
-            <Ionicons
-              name="search-outline"
-              size={16}
-              color={colors.mutedForeground}
-            />
-            <Text
-              style={[
-                styles.searchPlaceholder,
-                { color: colors.mutedForeground },
-              ]}
+          {/* Search bar — anchored to bottom of hero, overlaps content below */}
+          <View style={styles.heroSearchRow}>
+            <Pressable
+              style={[styles.heroSearchBar, { backgroundColor: "#FFFFFF", borderColor: "rgba(30,36,20,0.08)" }]}
+              onPress={() => router.push("/(tabs)/search")}
             >
-              Search products, meals, brands...
-            </Text>
-            <View
-              style={[
-                styles.searchFilterBtn,
-                {
-                  backgroundColor: colors.secondary,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Ionicons
-                name="options-outline"
-                size={14}
-                color={colors.primary}
+              <Ionicons name="search-outline" size={16} color="rgba(30,36,20,0.45)" />
+              <AnimatedSearchPlaceholder
+                suggestions={experience?.searchSuggestions ?? ["matooke", "posho flour", "injera", "ugali", "berbere"]}
+                color="rgba(30,36,20,0.45)"
               />
-            </View>
-          </Pressable>
+              <View style={[styles.searchFilterBtn, { backgroundColor: "#F0F5E8", borderColor: "#DDE8C8" }]}>
+                <Ionicons name="options-outline" size={14} color={colors.primary} />
+              </View>
+            </Pressable>
+          </View>
         </View>
 
         {/* Promo Banner — only shown when admin has activated a promo */}
@@ -1651,25 +1580,42 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: {
+  // ── Compact hero block ──
+  heroBlock: {
+    position: "relative",
+    width: "100%",
+    overflow: "hidden",
+    marginBottom: 14,
+  },
+  heroTopBar: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingBottom: 16,
+    paddingHorizontal: 18,
+    paddingBottom: 8,
+    gap: 10,
   },
-  headerLeft: { gap: 6 },
-  pillRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  countryPill: {
+  heroTopLeft: { flex: 1, gap: 2 },
+  heroTimeGreeting: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.9)",
+    letterSpacing: 0.1,
+    marginBottom: 2,
+  },
+  heroPillsRight: { gap: 6, alignItems: "flex-end" },
+  heroPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.28)",
     borderWidth: 1,
-    alignSelf: "flex-start",
+    borderColor: "rgba(255,255,255,0.18)",
   },
+  heroPillText: { fontSize: 12, fontWeight: "600", color: "#FFFFFF" },
   countryFlagBar: {
     width: 12,
     height: 12,
@@ -1678,19 +1624,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   countryFlagStripe: { flex: 1 },
-  locationPill: {
+  headerRight: { flexDirection: "row", gap: 8 },
+  heroCartBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 20,
-    borderWidth: 1,
-    alignSelf: "flex-start",
+    backgroundColor: "#C4541A",
   },
-  locationText: { fontSize: 12, fontWeight: "600" },
-  greeting: { fontSize: 24, fontWeight: "800", letterSpacing: -0.6 },
-  headerRight: { flexDirection: "row", gap: 10, marginTop: 4 },
+  heroCartBadgeText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  heroIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.28)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
   iconBtn: {
     width: 42,
     height: 42,
@@ -1711,25 +1669,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeText: { fontSize: 10, fontWeight: "700" },
-  heroBanner: {
-    marginHorizontal: 22,
-    height: 286,
-    borderRadius: 24,
-    overflow: "hidden",
-    marginBottom: 22,
-    shadowColor: "#1E2414",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  heroImage: { ...StyleSheet.absoluteFillObject },
   heroContent: {
     position: "absolute",
-    bottom: 0,
+    bottom: 72,
     left: 0,
     right: 0,
-    padding: 22,
+    paddingHorizontal: 20,
+    gap: 12,
   },
   heroBadge: {
     flexDirection: "row",
@@ -1739,30 +1685,27 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
     alignSelf: "flex-start",
-    marginBottom: 10,
+    marginBottom: 8,
+    backgroundColor: "rgba(0,0,0,0.25)",
   },
   heroBadgeDot: { width: 6, height: 6, borderRadius: 3 },
   heroBadgeText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.3 },
   heroTitle: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "800",
-    letterSpacing: -0.7,
-    lineHeight: 32,
-    marginBottom: 5,
+    letterSpacing: -0.4,
+    lineHeight: 26,
+    color: "#FFFFFF",
   },
   heroTagline: { fontSize: 14, marginBottom: 18, fontWeight: "500" },
-  heroButtons: { flexDirection: "row", gap: 10 },
+  heroButtons: { flexDirection: "row", gap: 10, marginTop: 4 },
   heroBtnPrimary: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 24,
-    shadowColor: "#1E2414",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
     elevation: 3,
   },
   heroBtnPrimaryText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
@@ -1770,12 +1713,54 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
   },
-  heroBtnSecondaryText: { fontSize: 13, fontWeight: "700" },
+  heroBtnSecondaryText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  standaloneSearchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 16,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 14,
+    borderWidth: 1,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 4,
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  heroSearchRow: {
+    position: "absolute",
+    bottom: -10,
+    left: 18,
+    right: 22,
+    zIndex: 10,
+  },
+  heroSearchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 16,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 14,
+    borderWidth: 1,
+    shadowColor: "#1E2414",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
   searchRow: { paddingHorizontal: 22, marginBottom: 12 },
   promoBanner: {
     marginHorizontal: 22,
@@ -2091,7 +2076,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
   },
-  trustItem: { alignItems: "center", gap: 6 },
+  trustItem: { alignItems: "center", gap: 6, flex: 1 },
   trustText: { fontSize: 11, fontWeight: "600" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
   modalSectionLabel: {

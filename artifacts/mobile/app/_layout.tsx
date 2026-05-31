@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/context/AuthContext";
 import { HomeCountryProvider } from "@/context/HomeCountryContext";
 import { CartProvider } from "@/context/CartContext";
+import { CartAnimationProvider } from "@/context/CartAnimationContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { AppContentProvider } from "@/context/AppContentContext";
@@ -69,7 +70,9 @@ export default function RootLayout() {
                       <AppContentProvider>
                         <HomeCountryProvider>
                           <CartProvider>
-                            <RootLayoutNav />
+                            <CartAnimationProvider>
+                              <RootLayoutNav />
+                            </CartAnimationProvider>
                           </CartProvider>
                         </HomeCountryProvider>
                       </AppContentProvider>

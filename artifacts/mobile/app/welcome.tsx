@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -22,6 +23,10 @@ export default function WelcomeScreen() {
 
   const handleStart = () => {
     router.replace("/onboarding");
+  };
+
+  const handlePrivacyPolicy = () => {
+    Linking.openURL("https://www.mekazon.com/policies/privacy-policy");
   };
 
   return (
@@ -60,7 +65,7 @@ export default function WelcomeScreen() {
           </View>
 
           <Text style={styles.headline}>{t("welcomeTitle")}</Text>
-          <Text style={styles.subtitle}>{t("welcomeSubtitle")}</Text>
+          <Text style={styles.tagline}>Your home, delivered.</Text>
 
           <View style={styles.trustRow}>
             {["Uganda", "Kenya", "Ethiopia", "West Africa"].map((c) => (
@@ -71,12 +76,19 @@ export default function WelcomeScreen() {
           </View>
 
           <Pressable style={styles.startBtn} onPress={handleStart}>
-            <Text style={styles.startBtnText}>{t("welcomeBtn")}</Text>
+            <Text style={styles.startBtnText}>Start</Text>
             <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
           </Pressable>
 
           <Text style={styles.footerNote}>
             No account needed to browse. Secure checkout, cash on delivery available.
+          </Text>
+
+          <Text style={styles.privacyNote}>
+            By continuing, you acknowledge that you have read and understood our{" "}
+            <Text style={styles.privacyLink} onPress={handlePrivacyPolicy}>
+              Privacy Policy
+            </Text>.
           </Text>
         </Animated.View>
       </View>
@@ -108,7 +120,7 @@ const styles = StyleSheet.create({
   },
   logo: { width: 52, height: 52 },
   bottomSection: {
-    gap: 16,
+    gap: 12,
   },
   taglinePill: {
     flexDirection: "row",
@@ -140,17 +152,17 @@ const styles = StyleSheet.create({
     letterSpacing: -1.2,
     lineHeight: 44,
   },
-  subtitle: {
-    fontSize: 15,
-    color: "rgba(255,255,255,0.70)",
-    lineHeight: 23,
-    marginBottom: 4,
+  tagline: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#C4541A",
+    letterSpacing: -0.3,
+    marginTop: -4,
   },
   trustRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 4,
   },
   trustBadge: {
     backgroundColor: "rgba(255,255,255,0.1)",
@@ -188,7 +200,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,255,255,0.4)",
     textAlign: "center",
-    paddingBottom: 8,
     lineHeight: 18,
+  },
+  privacyNote: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.35)",
+    textAlign: "center",
+    lineHeight: 17,
+    paddingBottom: 4,
+  },
+  privacyLink: {
+    color: "#C4541A",
+    textDecorationLine: "underline",
   },
 });

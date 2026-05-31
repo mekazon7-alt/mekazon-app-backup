@@ -6,9 +6,12 @@ import type {
 import { MOCK_COLLECTIONS, MOCK_COLLECTION_LIST } from "./mock-data";
 
 const SHOPIFY_STORE_DOMAIN =
-  (process.env.EXPO_PUBLIC_SHOPIFY_STORE_DOMAIN as string | undefined) ?? "";
+  (process.env.EXPO_PUBLIC_SHOPIFY_STORE_DOMAIN as string | undefined) ?? "mekazon.com";
 const SHOPIFY_STOREFRONT_TOKEN =
   (process.env.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN as string | undefined) ?? "";
+// NOTE: Set EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN in Replit Secrets
+// Get it from: Shopify Admin → Settings → Apps → Develop apps → Create app → Storefront API
+// Required scopes: unauthenticated_read_product_listings, unauthenticated_write_checkouts
 
 export const USE_MOCK = !SHOPIFY_STORE_DOMAIN || !SHOPIFY_STOREFRONT_TOKEN;
 

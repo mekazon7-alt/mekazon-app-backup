@@ -88,7 +88,7 @@ function fromFirestoreDoc(doc: {
   for (const [k, v] of Object.entries(doc.fields)) {
     result[k] = fromFirestoreValue(v);
   }
-  return result as AppContentData;
+  return result as unknown as AppContentData;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────

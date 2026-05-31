@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Linking } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -161,7 +162,7 @@ export default function OrdersScreen() {
         </Pressable>
         <Pressable
           style={[styles.viewCheckoutBtn, { backgroundColor: colors.primary }]}
-          onPress={() => Linking.openURL(item.checkoutUrl)}
+          onPress={() => item.checkoutUrl && WebBrowser.openBrowserAsync(item.checkoutUrl)}
         >
           <Ionicons name="storefront-outline" size={15} color="#FFFFFF" />
           <Text style={styles.viewCheckoutText}>{t("orderViewCheckout")}</Text>

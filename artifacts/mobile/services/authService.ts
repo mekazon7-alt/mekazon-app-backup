@@ -1,25 +1,21 @@
 /**
- * Auth Service — Mock OTP (MVP)
- * ─────────────────────────────────────────────────────────────────────────────
- * DEVELOPER NOTE:
- * Currently uses a fixed mock OTP (123456) for all phone numbers.
- * Replace sendOTP() with a real provider before any production release:
- *   - Twilio Verify: https://www.twilio.com/verify
- *   - Firebase Phone Auth: https://firebase.google.com/docs/auth/web/phone-auth
- *   - Supabase Phone Auth: https://supabase.com/docs/guides/auth/phone-login
- *
- * The verifyOTP() function signature is designed to be provider-agnostic.
- * Session is stored in AsyncStorage (device-local, no backend required for MVP).
- * ─────────────────────────────────────────────────────────────────────────────
+ * Auth Service — Real OTP via Twilio Verify
+ * Backend: Cloudflare Worker (twilio-worker.js)
+ * Channels: SMS (live) + WhatsApp (coming soon)
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { AuthSession, UserProfile } from "@/types/user";
 
 const SESSION_KEY = "@mekazon_auth_session";
-const MOCK_OTP = "123456";
+
+// ── Replace with your deployed Cloudflare Worker URL ──
+const OTP_API_URL =
+  (process.env.EXPO_PUBLIC_OTP_API_URL as string | undefined) ??
+  "https://mekazon-otp.YOUR-SUBDOMAIN.workers.dev";
 
 let _pendingPhone = "";
+let _pendingChannel: "sms" | "whatsapp" = "sms";
 
 export function setPendingPhone(phone: string) {
   _pendingPhone = phone;
@@ -29,25 +25,52 @@ export function getPendingPhone(): string {
   return _pendingPhone;
 }
 
-/**
- * Sends an OTP to the given phone number.
- * Currently mocks a network delay. Replace with a real provider.
- */
-export async function sendOTP(phone: string): Promise<void> {
-  _pendingPhone = phone;
-  // Simulate network delay
-  await new Promise((r) => setTimeout(r, 700));
-  // TODO: Replace with Twilio / Firebase / Supabase call
+export function setPendingChannel(channel: "sms" | "whatsapp") {
+  _pendingChannel = channel;
+}
+
+export function getPendingChannel(): "sms" | "whatsapp" {
+  return _pendingChannel;
 }
 
 /**
- * Verifies the OTP entered by the user.
- * Mock accepts "123456" for any phone number.
+ * Sends an OTP to the given phone number via SMS or WhatsApp
+ */
+export async function sendOTP(
+  phone: string,
+  channel: "sms" | "whatsapp" = "sms"
+): Promise<void> {
+  _pendingPhone = phone;
+  _pendingChannel = channel;
+
+  const response = await fetch(`${OTP_API_URL}/send-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone, channel }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || "Failed to send OTP");
+  }
+}
+
+/**
+ * Verifies the OTP entered by the user via Twilio Verify
  */
 export async function verifyOTP(otp: string): Promise<boolean> {
-  // Simulate verification delay
-  await new Promise((r) => setTimeout(r, 500));
-  return otp.trim() === MOCK_OTP;
+  const response = await fetch(`${OTP_API_URL}/verify-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phone: _pendingPhone, code: otp }),
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const data = await response.json();
+  return data.success === true;
 }
 
 export async function saveSession(user: UserProfile): Promise<AuthSession> {
@@ -65,7 +88,9 @@ export async function loadSession(): Promise<AuthSession | null> {
   }
 }
 
-export async function updateUserProfile(updates: Partial<UserProfile>): Promise<void> {
+export async function updateUserProfile(
+  updates: Partial<UserProfile>
+): Promise<void> {
   const session = await loadSession();
   if (!session) return;
   const updated: AuthSession = {

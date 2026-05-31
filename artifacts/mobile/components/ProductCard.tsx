@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import React from "react";
+import React, { useRef } from "react";
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -12,6 +12,7 @@ import Animated, {
 import { useColors } from "@/hooks/useColors";
 import type { Product } from "@/constants/personalization";
 import { useCart } from "@/context/CartContext";
+import { useCartAnimation } from "@/context/CartAnimationContext";
 import { USE_MOCK } from "@/services/shopify/client";
 
 const PRODUCT_IMAGES: Record<string, ReturnType<typeof require>> = {
@@ -36,6 +37,8 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function ProductCard({ product, cardStyle }: ProductCardProps) {
   const colors = useColors();
   const { addItem, items } = useCart();
+  const { triggerFly } = useCartAnimation();
+  const addBtnRef = useRef<View>(null);
   const scale = useSharedValue(1);
   const cartItem = items.find((i) => i.id === product.id);
   const productImage = product.imageKey ? PRODUCT_IMAGES[product.imageKey] : null;
@@ -47,17 +50,29 @@ export function ProductCard({ product, cardStyle }: ProductCardProps) {
       scale.value = withSpring(1);
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (addBtnRef.current) {
+      addBtnRef.current.measure((_x, _y, _w, _h, pageX, pageY) => {
+        const imageSource = productImage ?? (product.remoteImageUrl ? { uri: product.remoteImageUrl } : null);
+        triggerFly(imageSource, pageX + 16, pageY + 16);
+      });
+    }
+
     addItem(product);
   };
 
   const isProduct = product.imageKey?.startsWith("product-");
   const hasRemoteImage = !productImage && !!product.remoteImageUrl;
 
+  // If cardStyle provides a width, use it; otherwise use default 152
+  const cardWidth = cardStyle?.width ?? 152;
+
   return (
     <AnimatedPressable
       style={[
         styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border },
+        { backgroundColor: colors.card, borderColor: colors.border, width: cardWidth },
+        cardStyle ? { marginRight: 0 } : null,
         animStyle,
         cardStyle,
       ]}
@@ -120,24 +135,26 @@ export function ProductCard({ product, cardStyle }: ProductCardProps) {
               </Text>
             </View>
           )}
-          <Pressable
-            style={[
-              styles.addBtn,
-              {
-                backgroundColor: cartItem ? colors.primary : colors.secondary,
-                borderColor: cartItem ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={handleAdd}
-          >
-            {cartItem ? (
-              <Text style={[styles.addBtnCount, { color: colors.primaryForeground }]}>
-                {cartItem.quantity}
-              </Text>
-            ) : (
-              <Ionicons name="add" size={18} color={colors.mutedForeground} />
-            )}
-          </Pressable>
+          <View ref={addBtnRef} collapsable={false}>
+            <Pressable
+              style={[
+                styles.addBtn,
+                {
+                  backgroundColor: cartItem ? colors.primary : colors.secondary,
+                  borderColor: cartItem ? colors.primary : colors.border,
+                },
+              ]}
+              onPress={handleAdd}
+            >
+              {cartItem ? (
+                <Text style={[styles.addBtnCount, { color: colors.primaryForeground }]}>
+                  {cartItem.quantity}
+                </Text>
+              ) : (
+                <Ionicons name="add" size={18} color={colors.mutedForeground} />
+              )}
+            </Pressable>
+          </View>
         </View>
       </View>
     </AnimatedPressable>
@@ -146,7 +163,6 @@ export function ProductCard({ product, cardStyle }: ProductCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 152,
     borderRadius: 18,
     borderWidth: 1,
     overflow: "hidden",
@@ -163,20 +179,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  productImageContain: {
-    width: "85%",
-    height: "85%",
-  },
-  productImageCover: {
-    width: "100%",
-    height: "100%",
-  },
-  colorDot: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    opacity: 0.7,
-  },
+  productImageContain: { width: "85%", height: "85%" },
+  productImageCover: { width: "100%", height: "100%" },
+  colorDot: { width: 48, height: 48, borderRadius: 24, opacity: 0.7 },
   tag: {
     position: "absolute",
     top: 8,
@@ -185,39 +190,17 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 20,
   },
-  tagText: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  info: {
-    padding: 12,
-  },
-  name: {
-    fontSize: 13,
-    fontWeight: "600",
-    lineHeight: 18,
-    marginBottom: 2,
-  },
-  unit: {
-    fontSize: 11,
-    marginBottom: 10,
-  },
+  tagText: { fontSize: 10, fontWeight: "700", letterSpacing: 0.3 },
+  info: { padding: 12 },
+  name: { fontSize: 13, fontWeight: "600", lineHeight: 18, marginBottom: 2 },
+  unit: { fontSize: 11, marginBottom: 10 },
   bottom: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
   },
-  currency: {
-    fontSize: 10,
-    fontWeight: "500",
-    marginBottom: 1,
-  },
-  price: {
-    fontSize: 17,
-    fontWeight: "800",
-    letterSpacing: -0.4,
-  },
+  currency: { fontSize: 10, fontWeight: "500", marginBottom: 1 },
+  price: { fontSize: 17, fontWeight: "800", letterSpacing: -0.4 },
   demoBadge: {
     position: "absolute",
     top: 8,
@@ -227,21 +210,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 10,
   },
-  demoBadgeText: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: 0.5,
-  },
-  mockPriceWrap: {
-    justifyContent: "flex-end",
-    paddingBottom: 2,
-  },
-  mockPriceLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    letterSpacing: -0.1,
-  },
+  demoBadgeText: { fontSize: 9, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.5 },
+  mockPriceWrap: { justifyContent: "flex-end", paddingBottom: 2 },
+  mockPriceLabel: { fontSize: 10, fontWeight: "600", letterSpacing: -0.1 },
   addBtn: {
     width: 32,
     height: 32,
@@ -250,8 +221,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
   },
-  addBtnCount: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
+  addBtnCount: { fontSize: 13, fontWeight: "700" },
 });

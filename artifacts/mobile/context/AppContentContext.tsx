@@ -43,6 +43,23 @@ function matchesCountry(countries: string[] | undefined, target: HomeCountry): b
   return countries.includes(target) || countries.includes("all");
 }
 
+/**
+ * Deduplicates items so that country-specific items take priority over "all".
+ * If a user is from "uganda" and we have both uganda-specific AND "all" items
+ * with the same name, only the uganda-specific one shows.
+ */
+function deduplicateByName<T extends { countries: string[]; name?: string; id: string }>(
+  items: T[],
+  country: HomeCountry
+): T[] {
+  const specificItems = items.filter(i => i.countries.includes(country));
+  const specificNames = new Set(specificItems.map(i => i.name ?? i.id));
+  return items.filter(i => 
+    i.countries.includes(country) || 
+    (!i.countries.includes(country) && !specificNames.has(i.name ?? i.id))
+  );
+}
+
 export function AppContentProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppContentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,9 +96,8 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
   const getBasketsForCountry = useCallback(
     (country: HomeCountry): AdminBasket[] => {
       if (!data) return [];
-      return data.baskets
-        .filter((b) => b.active && matchesCountry(b.countries, country))
-        .sort((a, b) => a.order - b.order);
+      const matchedBaskets = data.baskets.filter((b) => b.active && matchesCountry(b.countries, country));
+      return deduplicateByName(matchedBaskets, country).sort((a, b) => a.order - b.order);
     },
     [data]
   );
@@ -89,9 +105,8 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
   const getMealsForCountry = useCallback(
     (country: HomeCountry): AdminMeal[] => {
       if (!data) return [];
-      return data.meals
-        .filter((m) => m.active && matchesCountry(m.countries, country))
-        .sort((a, b) => a.order - b.order);
+      const matchedMeals = data.meals.filter((m) => m.active && matchesCountry(m.countries, country));
+      return deduplicateByName(matchedMeals, country).sort((a, b) => a.order - b.order);
     },
     [data]
   );
@@ -99,9 +114,8 @@ export function AppContentProvider({ children }: { children: React.ReactNode }) 
   const getCategoriesForCountry = useCallback(
     (country: HomeCountry): AdminCategory[] => {
       if (!data) return [];
-      return data.categories
-        .filter((c) => c.active && matchesCountry(c.countries, country))
-        .sort((a, b) => a.order - b.order);
+      const matched = data.categories.filter((c) => c.active && matchesCountry(c.countries, country));
+      return deduplicateByName(matched, country).sort((a, b) => a.order - b.order);
     },
     [data]
   );

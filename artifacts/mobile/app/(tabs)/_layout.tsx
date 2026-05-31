@@ -3,13 +3,18 @@ import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
-import { Feather, Ionicons } from "@expo/vector-icons";
-import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import React, { useRef } from "react";
+import { Dimensions, Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/context/CartContext";
+import { useCartAnimation } from "@/context/CartAnimationContext";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+const CART_TAB_X = (2.5 / 5) * SCREEN_WIDTH;
 
 function NativeTabLayout() {
   return (
@@ -41,11 +46,26 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const colors = useColors();
   const { totalItems } = useCart();
+  const { cartIconPosition } = useCartAnimation();
   const colorScheme = useColorScheme();
   const safeAreaInsets = useSafeAreaInsets();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const cartTabRef = useRef<View>(null);
+
+  const onCartTabLayout = () => {
+    if (cartTabRef.current) {
+      cartTabRef.current.measure((_x, _y, _w, _h, pageX, pageY) => {
+        cartIconPosition.current = { x: pageX + 16, y: pageY + 16 };
+      });
+    } else {
+      cartIconPosition.current = {
+        x: CART_TAB_X,
+        y: SCREEN_HEIGHT - safeAreaInsets.bottom - 30,
+      };
+    }
+  };
 
   return (
     <Tabs
@@ -106,9 +126,13 @@ function ClassicTabLayout() {
           tabBarBadgeStyle: { backgroundColor: colors.primary, fontSize: 10 },
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="bag" tintColor={color} size={22} />
+              <View ref={cartTabRef} collapsable={false} onLayout={onCartTabLayout}>
+                <SymbolView name="bag" tintColor={color} size={22} />
+              </View>
             ) : (
-              <Feather name="shopping-bag" size={22} color={color} />
+              <View ref={cartTabRef} collapsable={false} onLayout={onCartTabLayout}>
+                <Feather name="shopping-bag" size={22} color={color} />
+              </View>
             ),
         }}
       />

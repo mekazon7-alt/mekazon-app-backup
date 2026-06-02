@@ -23,7 +23,7 @@ import { useLocation } from "@/context/LocationContext";
 import { useHomeCountry } from "@/context/HomeCountryContext";
 import { LocationBottomSheet } from "@/components/LocationBottomSheet";
 import { CART_CONTENT } from "@/constants/appContent";
-import { SavingsCoinAnimation } from "@/components/SavingsCoinAnimation";
+import { SavingsCoinAnimation, GoldCoin } from "@/components/SavingsCoinAnimation";
 import {
   computeDeliveryFee,
   computeVAT,
@@ -322,7 +322,10 @@ export default function CartScreen() {
 
               {totalSavings > 0 && (
                 <View style={styles.summaryRow}>
-                  <Text style={[styles.summaryLabel, { color: "#2E7D32" }]}>🪙 Discount savings</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <GoldCoin size={14} />
+                    <Text style={[styles.summaryLabel, { color: "#2E7D32" }]}>Discount savings</Text>
+                  </View>
                   <Text style={[styles.summaryValue, { color: "#2E7D32", fontWeight: "700" }]}>
                     - AED {totalSavings.toFixed(2)}
                   </Text>

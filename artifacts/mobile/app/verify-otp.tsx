@@ -38,6 +38,10 @@ export default function VerifyOtpScreen() {
   const [error, setError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  // Captured from the verify response, carried into the saved session.
+  const [shopifyCustomerId, setShopifyCustomerId] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+
   const otpRef = useRef<TextInput>(null);
   const nameRef = useRef<TextInput>(null);
 
@@ -55,8 +59,10 @@ export default function VerifyOtpScreen() {
     setLoading(true);
     setError("");
     try {
-      const ok = await verifyOTP(otp);
-      if (ok) {
+      const result = await verifyOTP(otp);
+      if (result.valid) {
+        setShopifyCustomerId(result.shopifyCustomerId);
+        setSessionToken(result.token);
         setStep("name");
         setTimeout(() => nameRef.current?.focus(), 200);
       } else {
@@ -82,6 +88,7 @@ export default function VerifyOtpScreen() {
       const profile: UserProfile = {
         phone,
         name: name.trim(),
+        shopifyCustomerId,
         notificationPreferences: {
           offers: true,
           freshStock: true,
@@ -91,7 +98,7 @@ export default function VerifyOtpScreen() {
           weeklyBasket: true,
         },
       };
-      const session = await saveSession(profile);
+      const session = await saveSession(profile, sessionToken);
       login(session);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       router.replace("/(tabs)/" as any);

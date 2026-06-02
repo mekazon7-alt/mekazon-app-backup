@@ -12,6 +12,8 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 
 interface Props {
@@ -19,7 +21,32 @@ interface Props {
   visible: boolean;
 }
 
-const COINS = ["🪙", "💰", "🪙", "💵", "🪙"];
+// A real, rendered gold coin (no emoji — looks identical on every device).
+// Exported so other screens (e.g. the cart summary) can reuse the same coin.
+export function GoldCoin({ size = 22 }: { size?: number }) {
+  return (
+    <LinearGradient
+      colors={["#FCE9A8", "#E7BC58", "#B8860B"]}
+      start={{ x: 0.2, y: 0.1 }}
+      end={{ x: 0.85, y: 0.95 }}
+      style={[
+        styles.goldCoin,
+        { width: size, height: size, borderRadius: size / 2 },
+      ]}
+    >
+      <View
+        style={[
+          styles.goldCoinRing,
+          {
+            width: size * 0.62,
+            height: size * 0.62,
+            borderRadius: (size * 0.62) / 2,
+          },
+        ]}
+      />
+    </LinearGradient>
+  );
+}
 
 function FloatingCoin({ delay, x }: { delay: number; x: number }) {
   const translateY = useSharedValue(0);
@@ -45,10 +72,10 @@ function FloatingCoin({ delay, x }: { delay: number; x: number }) {
     opacity: opacity.value,
   }));
 
-  const coin = COINS[Math.floor(Math.abs(x) % COINS.length)];
-
   return (
-    <Animated.Text style={[styles.floatingCoin, style]}>{coin}</Animated.Text>
+    <Animated.View style={[styles.floatingCoin, style]}>
+      <GoldCoin size={18} />
+    </Animated.View>
   );
 }
 
@@ -114,12 +141,17 @@ export function SavingsCoinAnimation({ savings, visible }: Props) {
         )}
 
         <View style={styles.row}>
-          <Text style={styles.coinEmoji}>🪙</Text>
+          <GoldCoin size={26} />
           <View style={styles.textGroup}>
             <Text style={styles.label}>You're saving</Text>
             <CountingNumber target={savings} duration={600} />
           </View>
-          <Text style={styles.celebrateEmoji}>🎉</Text>
+          <Ionicons
+            name="sparkles"
+            size={20}
+            color="#E7A100"
+            style={styles.celebrateIcon}
+          />
         </View>
       </Animated.View>
     </Animated.View>
@@ -145,15 +177,23 @@ const styles = StyleSheet.create({
   },
   floatingCoin: {
     position: "absolute",
-    fontSize: 18,
+  },
+  goldCoin: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#8C6A1A",
+  },
+  goldCoinRing: {
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  coinEmoji: { fontSize: 22 },
-  celebrateEmoji: { fontSize: 20, marginLeft: "auto" },
+  celebrateIcon: { marginLeft: "auto" },
   textGroup: { flex: 1, gap: 1 },
   label: {
     fontSize: 11,

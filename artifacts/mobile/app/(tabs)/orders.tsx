@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Linking } from "react-native";
-import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -19,6 +18,7 @@ import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCart } from "@/context/CartContext";
 import { loadOrders, clearOrders, type LocalOrder } from "@/services/orderHistoryService";
+import { fetchRemoteOrders, type RemoteOrder } from "@/services/authService";
 import type { Product } from "@/constants/personalization";
 
 function formatDate(iso: string): string {
@@ -31,6 +31,17 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Turn Shopify status codes into a short human label + dot colour. */
+function statusLabel(o: RemoteOrder): { text: string; dot: string } {
+  const fulfilled = o.fulfillmentStatus?.toUpperCase() === "FULFILLED";
+  const parts: string[] = [];
+  if (o.financialStatus && o.financialStatus !== "UNKNOWN") {
+    parts.push(o.financialStatus.charAt(0) + o.financialStatus.slice(1).toLowerCase());
+  }
+  parts.push(fulfilled ? "Fulfilled" : "Processing");
+  return { text: parts.join(" · "), dot: fulfilled ? "#2E9E5B" : "#C4881A" };
+}
+
 export default function OrdersScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -41,9 +52,13 @@ export default function OrdersScreen() {
   const bottomPad = Platform.OS === "web" ? 84 : insets.bottom + 60;
 
   const [orders, setOrders] = useState<LocalOrder[]>([]);
+  // null = no backend/session → use device-local history. Array = real Shopify orders.
+  const [remoteOrders, setRemoteOrders] = useState<RemoteOrder[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    const remote = await fetchRemoteOrders();
+    setRemoteOrders(remote);
     const data = await loadOrders();
     setOrders(data);
   }, []);
@@ -70,7 +85,7 @@ export default function OrdersScreen() {
     );
   };
 
-  const handleReorder = (order: LocalOrder) => {
+  const handleReorderLocal = (order: LocalOrder) => {
     order.items.forEach((item) => {
       const product: Product = {
         id: `reorder-${item.name.replace(/\s+/g, "-").toLowerCase()}`,
@@ -81,16 +96,91 @@ export default function OrdersScreen() {
         unit: "",
         cardColor: "#C8581C",
       };
-      for (let i = 0; i < item.quantity; i++) {
-        addItem(product);
-      }
+      for (let i = 0; i < item.quantity; i++) addItem(product);
     });
     Alert.alert("Added to Cart", `${order.items.length} item${order.items.length !== 1 ? "s" : ""} added to your cart.`);
   };
 
-  const renderOrder = ({ item }: { item: LocalOrder }) => (
+  const handleReorderRemote = (order: RemoteOrder) => {
+    let added = 0;
+    order.items.forEach((item) => {
+      const product: Product = {
+        id: item.variantId ?? `reorder-${item.title.replace(/\s+/g, "-").toLowerCase()}`,
+        name: item.title,
+        description: "",
+        price: item.price,
+        currency: order.currency || "AED",
+        unit: "",
+        cardColor: "#C8581C",
+        // Carry the real variant id so checkout maps straight to Shopify.
+        ...(item.variantId ? { variantId: item.variantId } : {}),
+      };
+      for (let i = 0; i < item.quantity; i++) addItem(product);
+      added += 1;
+    });
+    Alert.alert("Added to Cart", `${added} item${added !== 1 ? "s" : ""} added to your cart.`);
+  };
+
+  const showRemote = remoteOrders !== null;
+
+  const renderRemoteOrder = ({ item }: { item: RemoteOrder }) => {
+    const status = statusLabel(item);
+    return (
+      <View style={[styles.orderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.orderHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.orderId, { color: colors.mutedForeground }]}>{item.name}</Text>
+            <Text style={[styles.orderDate, { color: colors.foreground }]}>
+              {formatDate(item.processedAt)} at {formatTime(item.processedAt)}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={[styles.statusDot, { backgroundColor: status.dot }]} />
+            <Text style={[styles.statusText, { color: colors.foreground }]}>{status.text}</Text>
+          </View>
+        </View>
+
+        <View style={[styles.itemsList, { borderTopColor: colors.border }]}>
+          {item.items.slice(0, 4).map((it, i) => (
+            <View key={i} style={styles.itemRow}>
+              <Text style={[styles.itemQty, { color: colors.mutedForeground }]}>{it.quantity}x</Text>
+              <Text style={[styles.itemName, { color: colors.foreground }]} numberOfLines={1}>{it.title}</Text>
+              <Text style={[styles.itemPrice, { color: colors.foreground }]}>
+                {item.currency} {(it.price * it.quantity).toFixed(0)}
+              </Text>
+            </View>
+          ))}
+          {item.items.length > 4 && (
+            <Text style={[styles.moreItems, { color: colors.mutedForeground }]}>
+              +{item.items.length - 4} more items
+            </Text>
+          )}
+        </View>
+
+        <View style={[styles.totalsBox, { borderTopColor: colors.border }]}>
+          <View style={[styles.totalRow, styles.grandTotalRow]}>
+            <Text style={[styles.grandLabel, { color: colors.foreground }]}>Total</Text>
+            <Text style={[styles.grandValue, { color: colors.foreground }]}>
+              {item.currency} {item.total.toFixed(0)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.actionsRow}>
+          <Pressable
+            style={[styles.reorderBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            onPress={() => handleReorderRemote(item)}
+          >
+            <Ionicons name="refresh-outline" size={15} color="#FFFFFF" />
+            <Text style={[styles.reorderText, { color: "#FFFFFF" }]}>Reorder</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  };
+
+  const renderLocalOrder = ({ item }: { item: LocalOrder }) => (
     <View style={[styles.orderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      {/* Header */}
       <View style={styles.orderHeader}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.orderId, { color: colors.mutedForeground }]}>{item.id}</Text>
@@ -109,7 +199,6 @@ export default function OrdersScreen() {
         </View>
       </View>
 
-      {/* Items */}
       <View style={[styles.itemsList, { borderTopColor: colors.border }]}>
         {item.items.slice(0, 4).map((it, i) => (
           <View key={i} style={styles.itemRow}>
@@ -127,7 +216,6 @@ export default function OrdersScreen() {
         )}
       </View>
 
-      {/* Totals */}
       <View style={[styles.totalsBox, { borderTopColor: colors.border }]}>
         <View style={styles.totalRow}>
           <Text style={[styles.totalLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
@@ -151,18 +239,17 @@ export default function OrdersScreen() {
         </View>
       </View>
 
-      {/* Actions */}
       <View style={styles.actionsRow}>
         <Pressable
           style={[styles.reorderBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-          onPress={() => handleReorder(item)}
+          onPress={() => handleReorderLocal(item)}
         >
           <Ionicons name="refresh-outline" size={15} color={colors.primary} />
           <Text style={[styles.reorderText, { color: colors.primary }]}>Reorder</Text>
         </Pressable>
         <Pressable
           style={[styles.viewCheckoutBtn, { backgroundColor: colors.primary }]}
-          onPress={() => item.checkoutUrl && WebBrowser.openBrowserAsync(item.checkoutUrl)}
+          onPress={() => Linking.openURL(item.checkoutUrl)}
         >
           <Ionicons name="storefront-outline" size={15} color="#FFFFFF" />
           <Text style={styles.viewCheckoutText}>{t("orderViewCheckout")}</Text>
@@ -172,18 +259,20 @@ export default function OrdersScreen() {
     </View>
   );
 
+  const isEmpty = showRemote ? remoteOrders!.length === 0 : orders.length === 0;
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>{t("ordersTitle")}</Text>
-        {orders.length > 0 && (
+        {!showRemote && orders.length > 0 && (
           <Pressable onPress={handleClearAll}>
             <Text style={[styles.clearBtn, { color: colors.mutedForeground }]}>Clear history</Text>
           </Pressable>
         )}
       </View>
 
-      {orders.length > 0 && (
+      {!showRemote && orders.length > 0 && (
         <View style={[styles.localNote, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
           <Ionicons name="information-circle-outline" size={14} color={colors.mutedForeground} />
           <Text style={[styles.localNoteText, { color: colors.mutedForeground }]}>
@@ -192,7 +281,7 @@ export default function OrdersScreen() {
         </View>
       )}
 
-      {orders.length === 0 ? (
+      {isEmpty ? (
         <View style={styles.emptyState}>
           <Ionicons name="cube-outline" size={52} color={colors.mutedForeground} />
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("ordersEmpty")}</Text>
@@ -207,11 +296,21 @@ export default function OrdersScreen() {
             <Text style={styles.emptyCtaText}>Start Shopping</Text>
           </Pressable>
         </View>
+      ) : showRemote ? (
+        <FlatList
+          data={remoteOrders!}
+          keyExtractor={(item) => item.id}
+          renderItem={renderRemoteOrder}
+          contentContainerStyle={{ padding: 20, paddingBottom: bottomPad, gap: 14 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          }
+        />
       ) : (
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
-          renderItem={renderOrder}
+          renderItem={renderLocalOrder}
           contentContainerStyle={{ padding: 20, paddingBottom: bottomPad, gap: 14 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />

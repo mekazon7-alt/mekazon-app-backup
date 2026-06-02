@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Linking } from "react-native";
 import { router } from "expo-router";
-import { useWishlist } from "@/context/WishlistContext";
 import React, { useState } from "react";
 import {
   Alert,
@@ -34,6 +33,8 @@ import {
   syncNotificationSchedules,
   requestNotificationPermission,
 } from "@/services/notificationService";
+import { deleteAccount } from "@/services/authService";
+import { clearOrders } from "@/services/orderHistoryService";
 
 const APP_VERSION = "1.0";
 const VERSION_TAPS_REQUIRED = 5;
@@ -48,7 +49,6 @@ export default function ProfileScreen() {
 
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
-  const { items: wishlistItems } = useWishlist();
   const [showLocationSheet, setShowLocationSheet] = useState(false);
   const [notifs, setNotifs] = useState({
     weeklyBasket: session?.user.notificationPreferences.weeklyBasket ?? true,
@@ -81,6 +81,41 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await logout();
+  };
+
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "This permanently deletes your Mekazon account and personal data (name, phone, and saved details). Past orders on mekazon.com are kept for legal and accounting records, but your account is removed. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteAccount();
+              await clearOrders();
+              await logout();
+              Alert.alert(
+                "Account Deleted",
+                "Your account and personal data have been removed.",
+              );
+            } catch {
+              Alert.alert(
+                "Couldn't delete account",
+                "Something went wrong. Please try again, or contact support on WhatsApp.",
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   // Hidden admin access
@@ -316,6 +351,23 @@ export default function ProfileScreen() {
             <Ionicons name="open-outline" size={16} color={colors.mutedForeground} />
           </Pressable>
         </View>
+
+        {/* Danger zone — Apple requires in-app account deletion (Guideline 5.1.1(v)) */}
+        {isLoggedIn && (
+          <View style={[styles.menuSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Pressable
+              style={[styles.menuRow, { borderBottomColor: "transparent" }]}
+              onPress={handleDeleteAccount}
+              disabled={deleting}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.destructive} />
+              <Text style={[styles.menuLabel, { color: colors.destructive }]}>
+                {deleting ? "Deleting…" : "Delete account"}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.destructive} />
+            </Pressable>
+          </View>
+        )}
 
         {/* Admin Tools — only shown when admin is logged in */}
         {adminLoggedIn && (

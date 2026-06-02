@@ -185,3 +185,28 @@ export async function updateUserProfile(updates: Partial<UserProfile>): Promise<
 export async function clearSession(): Promise<void> {
   await AsyncStorage.removeItem(SESSION_KEY);
 }
+
+/**
+ * Deletes the user's account (Apple Guideline 5.1.1(v)).
+ * Asks the backend to delete the linked Shopify customer + personal data, then
+ * clears the device-local session regardless of the server result, so the
+ * account is gone from this device even if the backend is unreachable.
+ * (The caller should also clear local order history.)
+ */
+export async function deleteAccount(): Promise<void> {
+  if (API_URL) {
+    const session = await loadSession();
+    const token = session?.token;
+    if (token) {
+      try {
+        await fetch(`${API_URL}/api/account/delete`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // Proceed to clear local data regardless — the user asked to delete.
+      }
+    }
+  }
+  await clearSession();
+}

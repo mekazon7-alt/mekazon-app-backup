@@ -1,133 +1,149 @@
 import React, {
   createContext,
-  useCallback,
   useContext,
   useRef,
   useState,
+  useCallback,
 } from "react";
-import { Animated, Dimensions, Image, StyleSheet, View } from "react-native";
+import {
+  Dimensions,
+  StyleSheet,
+  View,
+} from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  runOnJS,
+  Easing,
+} from "react-native-reanimated";
+import { Image } from "expo-image";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SW, height: SH } = Dimensions.get("window");
+
+// Cart tab is roughly 2/5 across the screen
+const CART_TAB_X = (2.5 / 5) * SW;
+const CART_TAB_Y = SH - 50;
 
 interface FlyItem {
-  id: string;
-  imageSource: any;
+  imageUrl?: string;
+  imageKey?: string;
   startX: number;
   startY: number;
-  translateX: Animated.Value;
-  translateY: Animated.Value;
-  scale: Animated.Value;
-  opacity: Animated.Value;
 }
 
 interface CartAnimationContextType {
-  cartIconPosition: React.MutableRefObject<{ x: number; y: number }>;
-  triggerFly: (imageSource: any, startX: number, startY: number) => void;
+  triggerFly: (item: FlyItem) => void;
 }
 
 const CartAnimationContext = createContext<CartAnimationContextType>({
-  cartIconPosition: { current: { x: SCREEN_WIDTH * 0.6, y: SCREEN_HEIGHT - 50 } },
   triggerFly: () => {},
 });
 
-export function CartAnimationProvider({ children }: { children: React.ReactNode }) {
-  const [flyItems, setFlyItems] = useState<FlyItem[]>([]);
-  const cartIconPosition = useRef({ x: SCREEN_WIDTH * 0.6, y: SCREEN_HEIGHT - 50 });
+const PRODUCT_IMAGES: Record<string, ReturnType<typeof require>> = {
+  "product-royco": require("@/assets/images/product-royco.png"),
+  "product-unga": require("@/assets/images/product-unga.png"),
+  "product-teff": require("@/assets/images/product-teff.png"),
+  "product-berbere": require("@/assets/images/product-berbere.png"),
+  "product-coffee": require("@/assets/images/product-coffee.png"),
+  "lifestyle-matooke": require("@/assets/images/lifestyle-matooke.png"),
+  "lifestyle-injera": require("@/assets/images/lifestyle-injera.png"),
+  "lifestyle-spices": require("@/assets/images/lifestyle-spices.png"),
+  "lifestyle-ugali": require("@/assets/images/lifestyle-ugali.png"),
+};
 
-  const triggerFly = useCallback(
-    (imageSource: any, startX: number, startY: number) => {
-      const id = Math.random().toString(36).slice(2);
-      const translateX = new Animated.Value(0);
-      const translateY = new Animated.Value(0);
-      const scale = new Animated.Value(1);
-      const opacity = new Animated.Value(1);
+function FlyingImage({
+  item,
+  onDone,
+}: {
+  item: FlyItem;
+  onDone: () => void;
+}) {
+  const translateX = useSharedValue(item.startX);
+  const translateY = useSharedValue(item.startY);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
 
-      const targetX = cartIconPosition.current.x - startX;
-      const targetY = cartIconPosition.current.y - startY;
+  React.useEffect(() => {
+    // Fly to cart tab position
+    translateX.value = withSpring(CART_TAB_X - 20, {
+      damping: 20,
+      stiffness: 120,
+    });
+    translateY.value = withTiming(CART_TAB_Y, {
+      duration: 600,
+      easing: Easing.in(Easing.quad),
+    });
+    scale.value = withTiming(0.3, { duration: 600 });
+    opacity.value = withTiming(0, { duration: 550 }, (finished) => {
+      if (finished) runOnJS(onDone)();
+    });
+  }, []);
 
-      const newItem: FlyItem = {
-        id,
-        imageSource,
-        startX,
-        startY,
-        translateX,
-        translateY,
-        scale,
-        opacity,
-      };
+  const style = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: 0,
+    top: 0,
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+    opacity: opacity.value,
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    overflow: "hidden",
+    zIndex: 9999,
+  }));
 
-      setFlyItems((prev) => [...prev, newItem]);
-
-      Animated.parallel([
-        Animated.timing(translateX, {
-          toValue: targetX,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: targetY,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.timing(scale, {
-            toValue: 1.15,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 0.15,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.delay(400),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start(() => {
-        setFlyItems((prev) => prev.filter((item) => item.id !== id));
-      });
-    },
-    []
-  );
+  const localImg = item.imageKey ? PRODUCT_IMAGES[item.imageKey] : null;
 
   return (
-    <CartAnimationContext.Provider value={{ cartIconPosition, triggerFly }}>
-      {children}
-      {flyItems.map((item) => (
-        <Animated.View
-          key={item.id}
-          pointerEvents="none"
-          style={[
-            styles.flyingItem,
-            {
-              left: item.startX - 24,
-              top: item.startY - 24,
-              transform: [
-                { translateX: item.translateX },
-                { translateY: item.translateY },
-                { scale: item.scale },
-              ],
-              opacity: item.opacity,
-            },
-          ]}
-        >
-          {item.imageSource ? (
-            <Image
-              source={item.imageSource}
-              style={styles.flyingImage}
-              resizeMode="cover"
+    <Animated.View style={style}>
+      {localImg ? (
+        <Image source={localImg} style={{ width: 52, height: 52 }} contentFit="cover" />
+      ) : item.imageUrl ? (
+        <Image source={{ uri: item.imageUrl }} style={{ width: 52, height: 52 }} contentFit="cover" />
+      ) : (
+        <View style={{ width: 52, height: 52, backgroundColor: "#C4541A", borderRadius: 12 }} />
+      )}
+    </Animated.View>
+  );
+}
+
+export function CartAnimationProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [flyItems, setFlyItems] = useState<Array<FlyItem & { key: string }>>([]);
+
+  const triggerFly = useCallback((item: FlyItem) => {
+    const key = `fly-${Date.now()}-${Math.random()}`;
+    setFlyItems((prev) => [...prev, { ...item, key }]);
+  }, []);
+
+  const removeFly = useCallback((key: string) => {
+    setFlyItems((prev) => prev.filter((i) => i.key !== key));
+  }, []);
+
+  return (
+    <CartAnimationContext.Provider value={{ triggerFly }}>
+      <View style={{ flex: 1 }}>
+        {children}
+        {/* Overlay layer for flying items */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {flyItems.map((item) => (
+            <FlyingImage
+              key={item.key}
+              item={item}
+              onDone={() => removeFly(item.key)}
             />
-          ) : (
-            <View style={[styles.flyingImage, { backgroundColor: "#C4541A" }]} />
-          )}
-        </Animated.View>
-      ))}
+          ))}
+        </View>
+      </View>
     </CartAnimationContext.Provider>
   );
 }
@@ -135,23 +151,3 @@ export function CartAnimationProvider({ children }: { children: React.ReactNode 
 export function useCartAnimation() {
   return useContext(CartAnimationContext);
 }
-
-const styles = StyleSheet.create({
-  flyingItem: {
-    position: "absolute",
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: "hidden",
-    zIndex: 9999,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  flyingImage: {
-    width: "100%",
-    height: "100%",
-  },
-});

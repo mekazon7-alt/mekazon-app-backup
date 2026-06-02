@@ -1,13 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Linking } from "react-native";
-import * as WebBrowser from "expo-web-browser";
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { Analytics } from "@/services/analytics";
 
 import type { Product } from "@/constants/personalization";
 import { getCheckoutUrl } from "@/services/shopify/cart";
 import { saveOrder, generateOrderId, type LocalOrder } from "@/services/orderHistoryService";
 
+const CART_STORAGE_KEY = "@mekazon_cart_items";
 const CART_ID_KEY = "@mekazon_cart_id";
 
 interface CartItem extends Product {
@@ -26,6 +26,7 @@ interface CartContextType {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
+  totalSavings: number;
   checkoutLoading: boolean;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
@@ -38,6 +39,7 @@ const CartContext = createContext<CartContextType>({
   items: [],
   totalItems: 0,
   totalPrice: 0,
+  totalSavings: 0,
   checkoutLoading: false,
   addItem: () => {},
   removeItem: () => {},
@@ -48,10 +50,34 @@ const CartContext = createContext<CartContextType>({
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  // Load persisted cart on mount
+  useEffect(() => {
+    AsyncStorage.getItem(CART_STORAGE_KEY).then((raw) => {
+      if (raw) {
+        try { setItems(JSON.parse(raw)); } catch {}
+      }
+      setHydrated(true);
+    });
+  }, []);
+
+  // Persist cart whenever it changes (but not before hydration)
+  useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  }, [items, hydrated]);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Savings = sum of (compareAtPrice - price) * quantity for items that have compareAtPrice
+  const totalSavings = items.reduce((sum, item) => {
+    if (item.compareAtPrice && item.compareAtPrice > item.price) {
+      return sum + (item.compareAtPrice - item.price) * item.quantity;
+    }
+    return sum;
+  }, 0);
 
   const addItem = (product: Product) => {
     Analytics.addToCart(product.id, product.name, product.price);
@@ -73,27 +99,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(productId);
-      return;
-    }
+    if (quantity <= 0) { removeItem(productId); return; }
     setItems((prev) =>
       prev.map((i) => (i.id === productId ? { ...i, quantity } : i))
     );
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    setItems([]);
+    AsyncStorage.removeItem(CART_STORAGE_KEY);
+  };
 
-  /**
-   * Opens Shopify checkout for the current cart items and records a local
-   * order intent in the app's order history.
-   *
-   * Pass `extras` (computed in cart.tsx) to include VAT, delivery fee and
-   * estimated total in the order record.
-   *
-   * Orders will appear in Shopify Admin > Orders automatically once the
-   * customer completes the Shopify checkout flow.
-   */
   const shopifyCheckout = useCallback(async (extras?: CheckoutExtras) => {
     if (items.length === 0) return;
     setCheckoutLoading(true);
@@ -102,8 +118,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const itemsWithoutVariant = items.filter((item) => !item.variantId);
 
       if (itemsWithoutVariant.length > 0 && itemsWithVariant.length === 0) {
-        // All items are mock/demo — open store homepage instead
-        await WebBrowser.openBrowserAsync("https://www.mekazon.com/cart");
+        await Linking.openURL("https://www.mekazon.com/cart");
         return;
       }
 
@@ -112,11 +127,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         quantity: item.quantity,
       }));
 
-      const checkoutUrl = await getCheckoutUrl(
-        lineItems.length > 0 ? lineItems : []
-      );
+      const checkoutUrl = await getCheckoutUrl(lineItems.length > 0 ? lineItems : []);
 
-      // Save local order history record
       const vat = extras?.vatAmount ?? 0;
       const delivery = extras?.deliveryFee ?? null;
       const estimated = extras?.estimatedTotal ?? totalPrice + vat + (delivery ?? 0);
@@ -136,16 +148,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       };
       await saveOrder(order);
       setItems([]);
-
+      await AsyncStorage.removeItem(CART_STORAGE_KEY);
       Analytics.beginCheckout(estimated, items.length);
       await AsyncStorage.removeItem(CART_ID_KEY);
-      // Open Shopify checkout in an in-app browser sheet (user never fully leaves the app)
-      await WebBrowser.openBrowserAsync(checkoutUrl, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-        dismissButtonStyle: "close",
-        toolbarColor: "#F7F8F2",
-        controlsColor: "#4E7234",
-      });
+      await Linking.openURL(checkoutUrl);
     } catch (err) {
       console.warn("[Mekazon] Checkout error:", err);
       await Linking.openURL("https://www.mekazon.com/cart");
@@ -156,17 +162,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{
-        items,
-        totalItems,
-        totalPrice,
-        checkoutLoading,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        shopifyCheckout,
-      }}
+      value={{ items, totalItems, totalPrice, totalSavings, checkoutLoading, addItem, removeItem, updateQuantity, clearCart, shopifyCheckout }}
     >
       {children}
     </CartContext.Provider>

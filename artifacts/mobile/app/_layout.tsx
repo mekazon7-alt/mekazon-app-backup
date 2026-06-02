@@ -18,6 +18,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { HomeCountryProvider } from "@/context/HomeCountryContext";
 import { CartProvider } from "@/context/CartContext";
 import { CartAnimationProvider } from "@/context/CartAnimationContext";
+import { WishlistProvider } from "@/context/WishlistContext";
+import { RecentlyViewedProvider } from "@/context/RecentlyViewedContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { AppContentProvider } from "@/context/AppContentContext";
@@ -37,6 +39,22 @@ function RootLayoutNav() {
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="verify-otp" options={{ headerShown: false }} />
       <Stack.Screen name="admin-content" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="product-detail"
+        options={{
+          headerShown: false,
+          presentation: "card",
+          animation: "slide_from_bottom",
+        }}
+      />
+      <Stack.Screen
+        name="wishlist"
+        options={{
+          headerShown: false,
+          presentation: "card",
+          animation: "slide_from_right",
+        }}
+      />
     </Stack>
   );
 }
@@ -71,7 +89,11 @@ export default function RootLayout() {
                         <HomeCountryProvider>
                           <CartProvider>
                             <CartAnimationProvider>
-                              <RootLayoutNav />
+                            <WishlistProvider>
+                              <RecentlyViewedProvider>
+                                <RootLayoutNav />
+                              </RecentlyViewedProvider>
+                            </WishlistProvider>
                             </CartAnimationProvider>
                           </CartProvider>
                         </HomeCountryProvider>

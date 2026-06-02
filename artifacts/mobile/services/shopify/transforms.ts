@@ -68,21 +68,34 @@ export function shopifyProductToProduct(item: ShopifyProduct): Product {
   const remoteImageUrl =
     !imageKey && item.featuredImage ? item.featuredImage.url : undefined;
 
+  // Pull compareAtPrice from first variant if available
+  const firstVariant = item.variants.nodes[0];
+  const compareAtRaw = firstVariant?.compareAtPrice?.amount
+    ?? item.compareAtPriceRange?.minVariantPrice?.amount;
+  const compareAtPrice = compareAtRaw ? parseFloat(compareAtRaw) : undefined;
+  const salePrice = parseFloat(item.priceRange.minVariantPrice.amount);
+
+  // Only set compareAtPrice if it's actually higher than sale price
+  const validCompareAt =
+    compareAtPrice && compareAtPrice > salePrice ? compareAtPrice : undefined;
+
   return {
     id: item.id,
     name: item.title,
     description: item.description,
-    price: parseFloat(item.priceRange.minVariantPrice.amount),
+    price: salePrice,
     currency: item.priceRange.minVariantPrice.currencyCode,
-    unit: item.variants.nodes[0]?.title === "Default Title"
-      ? ""
-      : (item.variants.nodes[0]?.title ?? ""),
+    unit:
+      firstVariant?.title === "Default Title"
+        ? ""
+        : (firstVariant?.title ?? ""),
     tag: resolveTag(item.tags),
     cardColor: resolveCardColor(item.productType, item.tags),
     imageKey,
     remoteImageUrl,
     shopifyHandle: item.handle,
-    variantId: item.variants.nodes[0]?.id,
+    variantId: firstVariant?.id,
+    compareAtPrice: validCompareAt,
   };
 }
 

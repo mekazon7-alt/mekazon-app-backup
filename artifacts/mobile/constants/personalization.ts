@@ -13,6 +13,7 @@ export interface Product {
   remoteImageUrl?: string;
   shopifyHandle?: string;
   variantId?: string;
+  compareAtPrice?: number;
 }
 
 export interface Basket {

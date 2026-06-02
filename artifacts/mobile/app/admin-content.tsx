@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { appContentService } from "@/services/content/appContentService";
 import { isFirebaseConfigured } from "@/services/content/firebaseConfig";
 import { ImageUploadField } from "@/components/ImageUploadField";
-import { isAdminAuthenticated, adminLogout } from "@/services/adminAuth";
+import { isAdminAuthenticated, adminLogout, ADMIN_ENABLED } from "@/services/adminAuth";
 import type {
   AdminBasket,
   AdminMeal,
@@ -142,6 +142,11 @@ export default function AdminContentScreen() {
   useEffect(() => {
     if (isAdminAuthenticated() && !authed) setAuthed(true);
   });
+
+  // Hard guard: in production builds admin is disabled — bounce out entirely.
+  useEffect(() => {
+    if (!ADMIN_ENABLED) router.replace("/(tabs)/");
+  }, []);
 
   const handleLogout = () => {
     adminLogout();

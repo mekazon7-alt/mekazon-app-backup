@@ -1,36 +1,44 @@
 /**
- * Admin Authentication — MVP / Temporary
+ * Admin Authentication — internal/dev only.
  * ─────────────────────────────────────────────────────────────────────────────
  * DEVELOPER NOTE:
- * This is a temporary, password-based admin authentication system intended
- * for internal use only during early development.
+ * Temporary password-based admin access for internal content management.
  *
- * THIS MUST BE REPLACED before any public or production release with:
- *   - A proper backend authentication system (JWT, session tokens)
- *   - Role-based access control (RBAC)
- *   - Recommended future stack: Supabase Auth, Firebase Auth, or a custom API
+ * SECURITY:
+ *   - Admin tools are COMPLETELY DISABLED in production builds. They are only
+ *     reachable in a dev build (`__DEV__`), or when you explicitly opt in by
+ *     setting EXPO_PUBLIC_ENABLE_ADMIN="true". In a normal App Store / TestFlight
+ *     build neither the entry gesture nor the /admin-content & /debug-collections
+ *     routes do anything.
+ *   - There is NO hardcoded password. The password comes only from
+ *     EXPO_PUBLIC_ADMIN_TOKEN. If that env var is unset, admin is disabled even
+ *     in dev. (Set it in your local .env to use admin tools while developing.)
  *
- * Password is read from EXPO_PUBLIC_ADMIN_TOKEN env variable.
- * Set it in your .env file: EXPO_PUBLIC_ADMIN_TOKEN=your-secret-here
- * If not set, admin access is disabled entirely.
+ * REPLACE before any real production admin need with proper backend auth
+ * (JWT/session + RBAC).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-const ADMIN_TOKEN = process.env.EXPO_PUBLIC_ADMIN_TOKEN ?? "mekazon-2024";
+const ADMIN_TOKEN = process.env.EXPO_PUBLIC_ADMIN_TOKEN ?? "";
+
+/** Admin tooling is available only in dev builds, or when explicitly enabled. */
+export const ADMIN_ENABLED =
+  __DEV__ || process.env.EXPO_PUBLIC_ENABLE_ADMIN === "true";
 
 let _authenticated = false;
 
 export function checkAdminPassword(password: string): boolean {
-  if (!ADMIN_TOKEN) return false; // admin disabled if env var not set
+  if (!ADMIN_ENABLED) return false; // disabled in production
+  if (!ADMIN_TOKEN) return false; // disabled when no password is configured
   return password.trim() === ADMIN_TOKEN;
 }
 
 export function isAdminAuthenticated(): boolean {
-  return _authenticated;
+  return ADMIN_ENABLED && _authenticated;
 }
 
 export function setAdminAuthenticated(value: boolean): void {
-  _authenticated = value;
+  _authenticated = ADMIN_ENABLED ? value : false;
 }
 
 export function adminLogout(): void {

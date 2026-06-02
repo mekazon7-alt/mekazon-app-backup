@@ -27,7 +27,7 @@ import { useLocation } from "@/context/LocationContext";
 import { LocationBottomSheet } from "@/components/LocationBottomSheet";
 import { ONBOARDING_OPTIONS, type HomeCountry } from "@/constants/personalization";
 import { LANGUAGE_META, type SupportedLanguage } from "@/lib/i18n";
-import { checkAdminPassword, setAdminAuthenticated, isAdminAuthenticated, adminLogout } from "@/services/adminAuth";
+import { checkAdminPassword, setAdminAuthenticated, isAdminAuthenticated, adminLogout, ADMIN_ENABLED } from "@/services/adminAuth";
 import {
   sendLocalNotification,
   syncNotificationSchedules,
@@ -151,6 +151,7 @@ export default function ProfileScreen() {
   };
 
   const handleVersionTap = () => {
+    if (!ADMIN_ENABLED) return; // admin entry disabled in production builds
     if (adminLoggedIn) return;
     const next = versionTapCount + 1;
     setVersionTapCount(next);

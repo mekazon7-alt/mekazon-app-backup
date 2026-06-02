@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { getCollections, type ShopifyCollectionSummary } from "@/services/shopify";
 import { COUNTRY_COLLECTION_HANDLES } from "@/services/shopify";
+import { ADMIN_ENABLED, isAdminAuthenticated } from "@/services/adminAuth";
 
 const STORE_DOMAIN =
   (process.env.EXPO_PUBLIC_SHOPIFY_STORE_DOMAIN as string | undefined) ?? "";
@@ -32,6 +33,12 @@ export default function DebugCollectionsScreen() {
   const [collections, setCollections] = useState<ShopifyCollectionSummary[]>([]);
 
   const mappedHandles = new Set(Object.values(COUNTRY_COLLECTION_HANDLES));
+
+  // Hard guard: this debug screen is dev-only. In production builds, or if the
+  // user isn't an authenticated admin, bounce out immediately.
+  useEffect(() => {
+    if (!ADMIN_ENABLED || !isAdminAuthenticated()) router.replace("/(tabs)/");
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);

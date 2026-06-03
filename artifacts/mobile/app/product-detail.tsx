@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Platform,
@@ -18,7 +18,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -29,6 +28,10 @@ import { useRecentlyViewed } from "@/context/RecentlyViewedContext";
 import type { Product } from "@/constants/personalization";
 
 const { width: SW } = Dimensions.get("window");
+
+// Fallback brand color used when a product has no cardColor (prevents
+// an invalid color string like "undefined22" from crashing the screen).
+const FALLBACK_CARD_COLOR = "#8B7A5C";
 
 const PRODUCT_IMAGES: Record<string, ReturnType<typeof require>> = {
   "product-royco": require("@/assets/images/product-royco.png"),
@@ -42,19 +45,26 @@ const PRODUCT_IMAGES: Record<string, ReturnType<typeof require>> = {
   "lifestyle-ugali": require("@/assets/images/lifestyle-ugali.png"),
 };
 
-// Parse bullet points from tags (e.g. "protein-rich" -> "Protein rich")
-function tagToBullet(tag: string): string {
-  return tag
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/^(Mekazon|Ugandan.shop|Kenyan.shop|Ethiopian.shop|Beauty)$/i, "")
-    .trim();
+// Coerce anything (number, numeric string, null, undefined) into a finite
+// number. Shopify prices arrive as strings in some code paths, and a bad
+// value here used to crash the whole app via `.toFixed`.
+function num(value: unknown): number {
+  const n = typeof value === "number" ? value : parseFloat(String(value));
+  return Number.isFinite(n) ? n : 0;
+}
+
+// Format a price safely — never throws, always returns a string.
+function money(value: unknown): string {
+  return num(value).toFixed(0);
 }
 
 function getBullets(product: Product): string[] {
   // Use description sentences as bullets (split by ". " or "·")
-  const desc = product.description || "";
-  const parts = desc.split(/\.\s+|·/).map((s) => s.trim()).filter((s) => s.length > 4 && s.length < 80);
+  const desc = product?.description || "";
+  const parts = desc
+    .split(/\.\s+|·/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 4 && s.length < 80);
   return parts.slice(0, 3);
 }
 
@@ -73,29 +83,44 @@ export default function ProductDetailScreen() {
     if (params.product) {
       try {
         const p = JSON.parse(decodeURIComponent(params.product)) as Product;
-        setProduct(p);
-        addRecentlyViewed(p);
+        if (p && typeof p === "object") {
+          setProduct(p);
+          // addRecentlyViewed should never break the screen.
+          try {
+            addRecentlyViewed(p);
+          } catch {}
+        }
       } catch {}
     }
   }, [params.product]);
 
+  const addBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: addBtnScale.value }],
+  }));
+
   if (!product) return null;
 
+  // ---- Safe derived values (never throw on bad data) ----
+  const price = num(product.price);
+  const compareAt = num(product.compareAtPrice);
   const cartItem = items.find((i) => i.id === product.id);
   const wishlisted = isWishlisted(product.id);
   const localImage = product.imageKey ? PRODUCT_IMAGES[product.imageKey] : null;
   const isProductImg = product.imageKey?.startsWith("product-");
   const bullets = getBullets(product);
-  const hasDiscount = !!product.compareAtPrice && product.compareAtPrice > product.price;
+  const cardColor = product.cardColor || FALLBACK_CARD_COLOR;
+  const hasDiscount = compareAt > price && compareAt > 0;
   const discountPct = hasDiscount
-    ? Math.round(((product.compareAtPrice! - product.price) / product.compareAtPrice!) * 100)
+    ? Math.round(((compareAt - price) / compareAt) * 100)
     : 0;
 
   const topPad = Platform.OS === "web" ? 20 : insets.top;
   const bottomPad = Platform.OS === "web" ? 20 : insets.bottom;
 
   const handleAdd = () => {
-    addBtnScale.value = withSpring(0.92, {}, () => { addBtnScale.value = withSpring(1); });
+    addBtnScale.value = withSpring(0.92, {}, () => {
+      addBtnScale.value = withSpring(1);
+    });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     addItem(product);
   };
@@ -104,10 +129,6 @@ export default function ProductDetailScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     toggleWishlist(product);
   };
-
-  const addBtnStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: addBtnScale.value }],
-  }));
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -133,7 +154,7 @@ export default function ProductDetailScreen() {
         <Animated.View entering={FadeIn.duration(300)}>
           <View style={[
             styles.imageContainer,
-            { backgroundColor: localImage && isProductImg ? "#F4F6EE" : product.cardColor + "22" }
+            { backgroundColor: localImage && isProductImg ? "#F4F6EE" : cardColor + "22" }
           ]}>
             {localImage ? (
               <Image
@@ -144,7 +165,7 @@ export default function ProductDetailScreen() {
             ) : product.remoteImageUrl ? (
               <Image source={{ uri: product.remoteImageUrl }} style={styles.productImgCover} contentFit="cover" />
             ) : (
-              <View style={[styles.colorBlock, { backgroundColor: product.cardColor }]} />
+              <View style={[styles.colorBlock, { backgroundColor: cardColor }]} />
             )}
 
             {/* Discount badge */}
@@ -174,21 +195,23 @@ export default function ProductDetailScreen() {
           <Text style={[styles.productName, { color: colors.foreground }]}>{product.name}</Text>
 
           {/* Unit */}
-          <Text style={[styles.unit, { color: colors.mutedForeground }]}>{product.unit}</Text>
+          {product.unit ? (
+            <Text style={[styles.unit, { color: colors.mutedForeground }]}>{product.unit}</Text>
+          ) : null}
 
           {/* Price row */}
           <View style={styles.priceRow}>
             <View>
               <Text style={[styles.currency, { color: colors.mutedForeground }]}>AED</Text>
-              <Text style={[styles.price, { color: colors.foreground }]}>{product.price.toFixed(0)}</Text>
+              <Text style={[styles.price, { color: colors.foreground }]}>{money(price)}</Text>
             </View>
             {hasDiscount && (
               <View style={styles.compareGroup}>
                 <Text style={[styles.compareAt, { color: colors.mutedForeground }]}>
-                  AED {product.compareAtPrice!.toFixed(0)}
+                  AED {money(compareAt)}
                 </Text>
                 <View style={[styles.savingPill, { backgroundColor: "#E8F5E9" }]}>
-                  <Text style={styles.savingPillText}>Save AED {(product.compareAtPrice! - product.price).toFixed(0)}</Text>
+                  <Text style={styles.savingPillText}>Save AED {money(compareAt - price)}</Text>
                 </View>
               </View>
             )}
@@ -212,10 +235,12 @@ export default function ProductDetailScreen() {
         )}
 
         {/* Full description */}
-        <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.descSection}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>About this product</Text>
-          <Text style={[styles.descText, { color: colors.mutedForeground }]}>{product.description}</Text>
-        </Animated.View>
+        {product.description ? (
+          <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.descSection}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>About this product</Text>
+            <Text style={[styles.descText, { color: colors.mutedForeground }]}>{product.description}</Text>
+          </Animated.View>
+        ) : null}
 
         {/* Delivery info */}
         <Animated.View entering={FadeInDown.delay(400).duration(400)} style={[styles.deliveryCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
@@ -256,7 +281,7 @@ export default function ProductDetailScreen() {
           <Animated.View style={[addBtnStyle, { flex: 1 }]}>
             <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={handleAdd}>
               <Ionicons name="bag-add-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.addBtnText}>Add to Cart · AED {product.price.toFixed(0)}</Text>
+              <Text style={styles.addBtnText}>Add to Cart · AED {money(price)}</Text>
             </Pressable>
           </Animated.View>
         )}
